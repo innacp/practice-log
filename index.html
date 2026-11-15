@@ -15,10 +15,14 @@
 <body>
   <header class="topbar">
     <div class="wrap topbar-inner">
-      <div class="brand">
+      <a class="brand" href="/">
         <img class="logo" src="favicon.svg" width="34" height="34" alt="">
         <span class="wordmark">Practice<b>Log</b></span>
-      </div>
+      </a>
+      <nav class="nav" aria-label="Pages">
+        <a href="/" aria-current="page">Log</a>
+        <a href="/timer">Timer</a>
+      </nav>
       <div class="top-right">
         <span class="muted" id="today"></span>
         <span class="sync" id="sync" hidden></span>
@@ -85,6 +89,55 @@
       </form>
     </section>
 
+    <section class="duo">
+      <div class="card goal">
+        <div class="row">
+          <div>
+            <h2>Weekly goal</h2>
+            <p class="muted" id="goal-sub"></p>
+          </div>
+          <button type="button" class="ghost" id="goal-edit">Edit goal</button>
+        </div>
+        <form class="goal-form" id="goal-form" hidden>
+          <label for="goal-hours">Hours per week</label>
+          <select class="field" id="goal-hours">
+            <option value="60">1 hour</option>
+            <option value="120">2 hours</option>
+            <option value="180">3 hours</option>
+            <option value="240">4 hours</option>
+            <option value="300">5 hours</option>
+            <option value="420">7 hours</option>
+            <option value="600">10 hours</option>
+            <option value="840">14 hours</option>
+          </select>
+          <button type="submit" class="primary small">Save</button>
+          <button type="button" class="link" id="goal-cancel">Cancel</button>
+        </form>
+        <div class="goal-body">
+          <div class="ring" id="goal-ring-wrap">
+            <svg viewBox="0 0 140 140" aria-hidden="true">
+              <circle class="ring-track" cx="70" cy="70" r="60"/>
+              <circle class="ring-fill" id="goal-ring" cx="70" cy="70" r="60"/>
+            </svg>
+            <div class="ring-center"><b id="goal-pct">0%</b><span id="goal-of"></span></div>
+          </div>
+          <div class="week-bars" id="week-bars" aria-label="Minutes each day this week"></div>
+        </div>
+      </div>
+
+      <div class="card recap">
+        <div class="row">
+          <h2>Monthly recap</h2>
+          <div class="month-nav">
+            <button type="button" class="icon-btn" id="recap-prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <span id="recap-month"></span>
+            <button type="button" class="icon-btn" id="recap-next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div id="recap-body"></div>
+      </div>
+    </section>
+
     <section class="card">
       <div class="row">
         <div>
@@ -115,6 +168,7 @@
   </main>
 
   <div id="tip" hidden></div>
+  <script src="store.js"></script>
   <script src="app.js"></script>
 </body>
 </html>

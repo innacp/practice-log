@@ -3,31 +3,9 @@
 //   POST   /api/sessions          -> add one session, or an array of sessions (import)
 //   DELETE /api/sessions?id=...   -> delete one session
 // Every request needs the header `x-passcode` matching the PRACTICE_PASSCODE env var.
-import { timingSafeEqual, createHash } from 'node:crypto';
+import { redis, guard, readBody } from './_lib.js';
 
 const KEY = 'practice-log:sessions';
-const REDIS_URL = process.env.KV_REST_API_URL || process.env.UPSTASH_REDIS_REST_URL;
-const REDIS_TOKEN = process.env.KV_REST_API_TOKEN || process.env.UPSTASH_REDIS_REST_TOKEN;
-const PASSCODE = process.env.PRACTICE_PASSCODE;
-
-async function redis(...command) {
-  const r = await fetch(REDIS_URL, {
-    method: 'POST',
-    headers: { Authorization: `Bearer ${REDIS_TOKEN}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify(command),
-  });
-  const data = await r.json();
-  if (!r.ok || data.error) throw new Error(data.error || `Redis error ${r.status}`);
-  return data.result;
-}
-
-// Compare hashes so the check takes the same time whatever was typed
-function passcodeOk(given) {
-  if (typeof given !== 'string' || !given) return false;
-  const a = createHash('sha256').update(given).digest();
-  const b = createHash('sha256').update(PASSCODE).digest();
-  return timingSafeEqual(a, b);
-}
 
 function clean(s) {
   if (!s || typeof s !== 'object') return null;
@@ -47,14 +25,7 @@ function clean(s) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-
-  if (!REDIS_URL || !REDIS_TOKEN || !PASSCODE) {
-    return res.status(503).json({ error: 'not-configured' });
-  }
-  if (!passcodeOk(req.headers['x-passcode'])) {
-    return res.status(401).json({ error: 'wrong-passcode' });
-  }
+  if (!guard(req, res)) return;
 
   try {
     if (req.method === 'GET') {
@@ -67,7 +38,7 @@ export default async function handler(req, res) {
     }
 
     if (req.method === 'POST') {
-      const body = typeof req.body === 'string' ? JSON.parse(req.body || 'null') : req.body;
+      const body = readBody(req);
       const list = (Array.isArray(body) ? body : [body]).map(clean).filter(Boolean);
       if (!list.length) return res.status(400).json({ error: 'invalid-session' });
       if (list.length > 5000) return res.status(413).json({ error: 'too-many' });

@@ -1,27 +1,12 @@
 // Practice Log — sessions are saved online (Vercel + Redis, behind a passcode)
 // and cached in this browser's localStorage. Without the online database it
-// falls back to this browser only.
-const KEY = 'practice-log-v1';
-const PASS_KEY = 'practice-log-passcode';
-let sessions = load();
+// falls back to this browser only. Shared helpers live in store.js.
+let sessions = loadSessions();
+let settings = loadSettings();
 let filter = 'all';
 let instrument = 'drums';
 let cloud = false; // true once the online database is unlocked
-
-// ---------- Online database ----------
-function getPass() { try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; } }
-function setPass(p) { try { p ? localStorage.setItem(PASS_KEY, p) : localStorage.removeItem(PASS_KEY); } catch {} }
-
-async function api(method, body, query = '') {
-  const r = await fetch('/api/sessions' + query, {
-    method,
-    headers: { 'x-passcode': getPass(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
-    body: body ? JSON.stringify(body) : undefined,
-  });
-  let data = null;
-  try { data = await r.json(); } catch {}
-  return { status: r.status, data };
-}
+function save() { saveSessions(sessions); }
 
 function setSync(text, kind) {
   const s = document.getElementById('sync');
@@ -49,8 +34,7 @@ function showUnlocked() {
 
 // Try to load from the database. Falls back to this-browser-only mode when no database exists.
 async function connect() {
-  let res;
-  try { res = await api('GET'); } catch { res = { status: 0 }; }
+  const res = await api('GET');
 
   if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
     cloud = true;
@@ -59,6 +43,14 @@ async function connect() {
     const localOnly = sessions.filter(s => !remoteIds.has(s.id));
     sessions = remote.concat(localOnly);
     save();
+    // Weekly goal lives online too
+    const st = await api('GET', null, '', '/api/settings');
+    if (st.status === 200 && st.data && st.data.settings && st.data.settings.weeklyGoal) {
+      settings = { ...settings, ...st.data.settings };
+      saveSettingsLocal(settings);
+    } else if (st.status === 200) {
+      api('PUT', settings, '', '/api/settings'); // first time: upload the goal set on this device
+    }
     if (localOnly.length) {
       const up = await api('POST', localOnly).catch(() => ({ status: 0 }));
       if (up.status !== 200) { setSync('Some sessions not uploaded', 'err'); showUnlocked(); render(); return; }
@@ -120,20 +112,7 @@ const SCALES = {
 };
 const DOTS = { drums: 'var(--drums)', vocals: 'var(--vocals)', all: '#CC3FEB' };
 const LABELS = { drums: 'Drums', vocals: 'Vocals', all: 'All' };
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-
-function load() {
-  try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
-}
-function save() {
-  try { localStorage.setItem(KEY, JSON.stringify(sessions)); } catch {}
-}
-
-const pad = n => String(n).padStart(2, '0');
-const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
-const today = () => iso(new Date());
 const pretty = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
-const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 
 function visible() {
   return filter === 'all' ? sessions : sessions.filter(s => s.type === filter);
@@ -158,7 +137,6 @@ function graphRange() {
 }
 
 // ---------- Motion helpers ----------
-const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 let animateNextGraph = true;  // wave-in the squares on first load and tab switch
 let justAddedId = null;       // highlight the newest row
 let justAddedDate = null;     // pop the square that was just filled
@@ -177,29 +155,6 @@ function countTo(id, to, decimals = 0) {
     if (t < 1) requestAnimationFrame(step);
   };
   requestAnimationFrame(step);
-}
-
-function confetti(fromEl) {
-  if (reducedMotion()) return;
-  const r = fromEl.getBoundingClientRect();
-  const colors = ['#D100FF', '#A13BFF', '#FF6EC7', '#EA6A1F', '#4C6EF5', '#FFD43B'];
-  for (let i = 0; i < 36; i++) {
-    const p = el('span', 'confetti');
-    p.style.background = colors[i % colors.length];
-    p.style.left = r.left + r.width / 2 + 'px';
-    p.style.top = r.top + r.height / 2 + 'px';
-    if (i % 3 === 0) p.style.borderRadius = '50%';
-    document.body.appendChild(p);
-    const angle = (Math.PI * 2 * i) / 36 + Math.random() * 0.4;
-    const dist = 80 + Math.random() * 120;
-    const dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist - 60;
-    p.animate([
-      { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 },
-      { transform: `translate(${dx}px, ${dy}px) scale(1) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.6 },
-      { transform: `translate(${dx * 1.1}px, ${dy + 140}px) scale(0.6) rotate(${Math.random() * 720}deg)`, opacity: 0 },
-    ], { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }).onfinish = () => p.remove();
-    setTimeout(() => p.remove(), 2000); // backup if the tab was in the background
-  }
 }
 
 function movePill() {
@@ -297,8 +252,8 @@ function streaks(byDay) {
 function renderStats() {
   const list = visible();
   const { current, longest } = streaks(minutesByDay(list));
-  const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
-  const week = list.filter(s => s.date >= iso(weekAgo) && s.date <= today()).reduce((a, s) => a + s.minutes, 0);
+  const monday = iso(weekStart());
+  const week = list.filter(s => s.date >= monday && s.date <= today()).reduce((a, s) => a + s.minutes, 0);
   const total = list.reduce((a, s) => a + s.minutes, 0);
   const streakEl = document.querySelector('.streak');
   if ((shown.streak ?? 0) < current && shown.streak !== undefined) {
@@ -344,7 +299,165 @@ function renderSessions() {
   }
 }
 
-function render() { renderGraph(); renderStats(); renderSessions(); }
+// ---------- Weekly goal ----------
+const RING_C = 2 * Math.PI * 60;
+let lastGoalPct = null; // to celebrate only when the goal is crossed, not on page load
+
+function renderGoal() {
+  const goal = settings.weeklyGoal;
+  const start = weekStart();
+  const startKey = iso(start), todayKey = today();
+  const byDay = minutesByDay(sessions.filter(s => s.date >= startKey && s.date <= todayKey));
+  const done = Object.values(byDay).reduce((a, b) => a + b, 0);
+  const pct = goal ? done / goal : 0;
+
+  const ring = document.getElementById('goal-ring');
+  ring.style.strokeDasharray = RING_C;
+  ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, pct));
+  document.getElementById('goal-ring-wrap').classList.toggle('done', pct >= 1);
+  document.getElementById('goal-pct').textContent = Math.round(pct * 100) + '%';
+  document.getElementById('goal-of').textContent = `${fmtMin(done)} of ${fmtMin(goal)}`;
+
+  const daysLeft = 7 - ((new Date().getDay() + 6) % 7); // including today
+  const left = Math.max(0, goal - done);
+  document.getElementById('goal-sub').textContent = pct >= 1
+    ? `Goal reached! ${fmtMin(done - goal) === '0m' ? 'Right on target.' : fmtMin(done - goal) + ' extra so far.'}`
+    : `${fmtMin(left)} to go · about ${fmtMin(Math.ceil(left / daysLeft))} a day`;
+
+  // Mon–Sun bars
+  const bars = document.getElementById('week-bars');
+  bars.innerHTML = '';
+  const daily = goal / 7;
+  const max = Math.max(daily * 1.5, ...Object.values(byDay), 1);
+  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((label, i) => {
+    const d = new Date(start); d.setDate(start.getDate() + i);
+    const key = iso(d), min = byDay[key] || 0;
+    const col = el('div', 'wb' + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' future' : ''));
+    col.title = `${d.toLocaleDateString(undefined, { weekday: 'long' })}: ${min ? fmtMin(min) : 'no practice'}`;
+    const track = el('div', 'wb-track');
+    const bar = el('div', 'wb-bar' + (min >= daily ? ' hit' : ''));
+    bar.style.height = (min / max * 100) + '%';
+    bar.style.setProperty('--d', i * 60 + 'ms');
+    const line = el('div', 'wb-line'); line.style.bottom = (daily / max * 100) + '%';
+    track.append(line, bar);
+    col.append(track, el('span', null, label));
+    bars.appendChild(col);
+  });
+
+  if (lastGoalPct !== null && lastGoalPct < 1 && pct >= 1) confetti(document.getElementById('goal-ring-wrap'));
+  lastGoalPct = pct;
+}
+
+const goalForm = document.getElementById('goal-form');
+document.getElementById('goal-edit').onclick = () => {
+  const sel = document.getElementById('goal-hours');
+  if (![...sel.options].some(o => +o.value === settings.weeklyGoal)) {
+    const o = el('option', null, fmtMin(settings.weeklyGoal)); o.value = settings.weeklyGoal; sel.prepend(o);
+  }
+  sel.value = settings.weeklyGoal;
+  goalForm.hidden = false;
+  sel.focus();
+};
+document.getElementById('goal-cancel').onclick = () => { goalForm.hidden = true; };
+goalForm.addEventListener('submit', async e => {
+  e.preventDefault();
+  settings.weeklyGoal = +document.getElementById('goal-hours').value;
+  saveSettingsLocal(settings);
+  goalForm.hidden = true;
+  lastGoalPct = null; // changing the goal shouldn't throw confetti
+  renderGoal();
+  if (cloud) {
+    const r = await api('PUT', settings, '', '/api/settings');
+    setSync(r.status === 200 ? 'Saved online' : 'Goal not saved online', r.status === 200 ? 'ok' : 'err');
+  }
+});
+
+// ---------- Monthly recap ----------
+let recapMonth = new Date(); recapMonth.setDate(1); recapMonth.setHours(0, 0, 0, 0);
+
+function monthSessions(m) {
+  const prefix = `${m.getFullYear()}-${pad(m.getMonth() + 1)}`;
+  return sessions.filter(s => s.date.startsWith(prefix));
+}
+
+function renderRecap() {
+  const m = recapMonth;
+  const now = new Date();
+  const isCurrent = m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth();
+  document.getElementById('recap-month').textContent = `${MONTHS_LONG[m.getMonth()]} ${m.getFullYear()}`;
+  document.getElementById('recap-next').disabled = isCurrent;
+
+  const body = document.getElementById('recap-body');
+  body.innerHTML = '';
+  const list = monthSessions(m);
+  if (!list.length) {
+    body.appendChild(el('p', 'recap-empty', isCurrent ? 'Nothing logged this month yet. Your recap builds up as you practise.' : `No practice logged in ${MONTHS_LONG[m.getMonth()]}.`));
+    return;
+  }
+
+  const byDay = minutesByDay(list);
+  const total = list.reduce((a, s) => a + s.minutes, 0);
+  const drums = list.filter(s => s.type === 'drums').reduce((a, s) => a + s.minutes, 0);
+  const vocals = total - drums;
+  const [bestKey, bestMin] = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
+  const { longest } = streaks(byDay);
+  const prev = new Date(m); prev.setMonth(prev.getMonth() - 1);
+  const prevTotal = monthSessions(prev).reduce((a, s) => a + s.minutes, 0);
+
+  const stats = el('div', 'recap-stats');
+  const best = new Date(bestKey + 'T00:00');
+  [
+    [fmtMin(total), 'total practice'],
+    [String(Object.keys(byDay).length), 'days practised'],
+    [String(longest), 'longest streak'],
+    [`${best.getDate()} ${MONTHS[best.getMonth()]}`, `best day · ${fmtMin(bestMin)}`],
+  ].forEach(([v, l]) => { const d = el('div', 'rs'); d.append(el('b', null, v), el('span', null, l)); stats.appendChild(d); });
+  body.appendChild(stats);
+
+  // Compared with the month before
+  if (prevTotal) {
+    const change = Math.round((total - prevTotal) / prevTotal * 100);
+    const up = change >= 0;
+    body.appendChild(el('p', 'recap-change ' + (up ? 'up' : 'down'),
+      `${up ? '▲' : '▼'} ${Math.abs(change)}% vs ${MONTHS_LONG[prev.getMonth()]}${isCurrent ? ' so far' : ''}`));
+  }
+
+  // Drums / vocals split
+  const split = el('div', 'split');
+  const bar = el('div', 'split-bar');
+  const dPart = el('span', 'split-drums'); dPart.style.width = (drums / total * 100) + '%';
+  const vPart = el('span', 'split-vocals'); vPart.style.width = (vocals / total * 100) + '%';
+  bar.append(dPart, vPart);
+  const legend = el('div', 'split-legend');
+  legend.append(
+    el('span', 'k drums', `Drums ${fmtMin(drums)} · ${Math.round(drums / total * 100)}%`),
+    el('span', 'k vocals', `Vocals ${fmtMin(vocals)} · ${Math.round(vocals / total * 100)}%`),
+  );
+  split.append(bar, legend);
+  body.appendChild(split);
+
+  // Mini calendar
+  const cal = el('div', 'mini-cal');
+  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(d => cal.appendChild(el('span', 'mc-head', d)));
+  const offset = (m.getDay() + 6) % 7;
+  for (let i = 0; i < offset; i++) cal.appendChild(el('span', 'mc-blank'));
+  const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
+  for (let d = 1; d <= days; d++) {
+    const key = `${m.getFullYear()}-${pad(m.getMonth() + 1)}-${pad(d)}`;
+    const min = byDay[key] || 0;
+    const c = el('span', 'mc-day' + (min ? ' has' : '') + (key === today() ? ' is-today' : ''), String(d));
+    c.style.background = min ? SCALES.all[level(min)] : '';
+    if (level(min) >= 3) c.style.color = '#fff';
+    c.title = min ? `${d} ${MONTHS[m.getMonth()]}: ${fmtMin(min)}` : `${d} ${MONTHS[m.getMonth()]}`;
+    cal.appendChild(c);
+  }
+  body.appendChild(cal);
+}
+
+document.getElementById('recap-prev').onclick = () => { recapMonth.setMonth(recapMonth.getMonth() - 1); renderRecap(); };
+document.getElementById('recap-next').onclick = () => { recapMonth.setMonth(recapMonth.getMonth() + 1); renderRecap(); };
+
+function render() { renderGraph(); renderStats(); renderGoal(); renderRecap(); renderSessions(); }
 
 // Header date
 document.getElementById('today').textContent =
