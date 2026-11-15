@@ -305,6 +305,10 @@ function renderStats() {
     streakEl.classList.remove('bump'); void streakEl.offsetWidth; streakEl.classList.add('bump');
   }
   countTo('streak', current);
+  // The fire grows with the streak and goes out at 0
+  const fire = document.querySelector('.fire');
+  fire.classList.toggle('out', current === 0);
+  fire.style.setProperty('--heat', (1.1 + Math.min(current, 30) / 30 * 0.4).toFixed(2));
   document.querySelector('.streak .unit').textContent = current === 1 ? ' day' : ' days';
   countTo('longest', longest);
   countTo('week', week);
