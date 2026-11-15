@@ -1,0 +1,73 @@
+:root {
+  --bg: #f6f8fa; --card: #ffffff; --text: #1f2328; --muted: #656d76; --border: #d0d7de;
+  --accent: #1f883d;
+  --l0: #ebedf0; --l1: #9be9a8; --l2: #40c463; --l3: #30a14e; --l4: #216e39;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0d1117; --card: #161b22; --text: #e6edf3; --muted: #8d96a0; --border: #30363d;
+    --accent: #2ea043;
+    --l0: #1f242b; --l1: #0e4429; --l2: #006d32; --l3: #26a641; --l4: #39d353;
+  }
+}
+body[data-filter="drums"] { --l1: #ffd8a8; --l2: #ffa94d; --l3: #f76707; --l4: #c2410c; }
+body[data-filter="vocals"] { --l1: #d0bfff; --l2: #9775fa; --l3: #7048e8; --l4: #5f3dc4; }
+
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--text);
+  font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+}
+header, main { max-width: 900px; margin: 0 auto; padding: 0 16px; }
+header { padding-top: 32px; }
+h1 { margin: 0; font-size: 28px; }
+h2 { margin: 0; font-size: 16px; font-weight: 600; }
+.sub { color: var(--muted); margin: 4px 0 20px; }
+.card { background: var(--card); border: 1px solid var(--border); border-radius: 8px; padding: 16px; margin-bottom: 16px; }
+.row { display: flex; justify-content: space-between; align-items: center; gap: 12px; flex-wrap: wrap; margin-bottom: 12px; }
+
+form { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; align-items: end; }
+form .wide { grid-column: 1 / 3; }
+label { display: flex; flex-direction: column; gap: 4px; font-size: 13px; color: var(--muted); }
+input, select {
+  font: inherit; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 8px;
+}
+button, .btn {
+  font: inherit; font-size: 13px; cursor: pointer; color: var(--text); background: var(--bg);
+  border: 1px solid var(--border); border-radius: 6px; padding: 6px 12px; display: inline-block;
+}
+form button { background: var(--accent); color: #fff; border-color: transparent; font-weight: 600; padding: 8px 12px; }
+.tabs button.active { background: var(--accent); color: #fff; border-color: transparent; }
+.tools { display: flex; gap: 8px; }
+
+.graph-wrap { overflow-x: auto; padding-bottom: 4px; }
+#graph { display: grid; grid-template-rows: 14px repeat(7, 11px); grid-auto-flow: column; grid-auto-columns: 11px; gap: 3px; width: max-content; }
+.month { font-size: 11px; color: var(--muted); grid-row: 1; white-space: nowrap; }
+.cell { width: 11px; height: 11px; border-radius: 2px; background: var(--l0); display: inline-block; outline: 1px solid rgba(27,31,36,.06); outline-offset: -1px; }
+.cell.l1 { background: var(--l1); } .cell.l2 { background: var(--l2); }
+.cell.l3 { background: var(--l3); } .cell.l4 { background: var(--l4); }
+.cell.future { visibility: hidden; }
+.legend { display: flex; align-items: center; justify-content: flex-end; gap: 3px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+.legend .cell { margin: 0 1px; }
+
+.stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 16px; }
+.stat { border-top: 1px solid var(--border); padding-top: 8px; }
+.stat b { display: block; font-size: 22px; }
+.stat span { font-size: 12px; color: var(--muted); }
+
+#sessions { list-style: none; margin: 0; padding: 0; }
+#sessions li { display: flex; gap: 12px; align-items: baseline; padding: 8px 0; border-top: 1px solid var(--border); }
+#sessions .tag { font-size: 12px; font-weight: 600; border-radius: 999px; padding: 1px 8px; color: #fff; }
+.tag.drums { background: #e8590c; } .tag.vocals { background: #7048e8; }
+#sessions .notes { flex: 1; color: var(--muted); overflow-wrap: anywhere; }
+#sessions .del { border: none; background: none; color: var(--muted); padding: 0 4px; }
+.empty { color: var(--muted); }
+
+#tip { position: fixed; pointer-events: none; background: #24292f; color: #fff; font-size: 12px; padding: 4px 8px; border-radius: 6px; white-space: nowrap; z-index: 10; }
+
+@media (max-width: 600px) {
+  form { grid-template-columns: 1fr 1fr; }
+  form .wide { grid-column: 1 / -1; }
+  .stats { grid-template-columns: 1fr 1fr; }
+}

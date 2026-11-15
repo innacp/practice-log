@@ -1,0 +1,63 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Practice Log</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <header>
+    <h1>Practice Log</h1>
+    <p class="sub">Drums &amp; vocals, one square per day.</p>
+  </header>
+
+  <main>
+    <section class="card">
+      <h2>Log a session</h2>
+      <form id="log-form">
+        <label>Date <input type="date" name="date" required></label>
+        <label>Instrument
+          <select name="type">
+            <option value="drums">Drums</option>
+            <option value="vocals">Vocals</option>
+          </select>
+        </label>
+        <label>Minutes <input type="number" name="minutes" min="1" max="1440" value="30" required></label>
+        <label class="wide">What did you work on? <input type="text" name="notes" placeholder="e.g. paradiddles at 90 bpm"></label>
+        <button type="submit">Add</button>
+      </form>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <h2 id="total-line">0 minutes in the last year</h2>
+        <div class="tabs" role="tablist">
+          <button data-filter="all" class="active">All</button>
+          <button data-filter="drums">Drums</button>
+          <button data-filter="vocals">Vocals</button>
+        </div>
+      </div>
+      <div class="graph-wrap"><div id="graph"></div></div>
+      <div class="legend">Less
+        <span class="cell l0"></span><span class="cell l1"></span><span class="cell l2"></span><span class="cell l3"></span><span class="cell l4"></span>
+        More</div>
+      <div class="stats" id="stats"></div>
+    </section>
+
+    <section class="card">
+      <div class="row">
+        <h2>Recent sessions</h2>
+        <div class="tools">
+          <button id="export">Export</button>
+          <label class="btn">Import<input type="file" id="import" accept="application/json" hidden></label>
+        </div>
+      </div>
+      <ul id="sessions"></ul>
+    </section>
+  </main>
+
+  <div id="tip" hidden></div>
+  <script src="app.js"></script>
+</body>
+</html>
