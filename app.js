@@ -116,7 +116,10 @@ document.getElementById('lock').onclick = () => {
 const SCALES = {
   drums:  ['#EEF0F3', '#FFD8B8', '#FDA770', '#EA6A1F', '#B8430C'],
   vocals: ['#EEF0F3', '#CDD7FF', '#91A7FF', '#4C6EF5', '#2F44B3'],
+  all:    ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'],
 };
+const DOTS = { drums: 'var(--drums)', vocals: 'var(--vocals)', all: '#CC3FEB' };
+const LABELS = { drums: 'Drums', vocals: 'Vocals', all: 'All' };
 const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 
 function load() {
@@ -174,16 +177,17 @@ function renderGraph() {
   }
   graph.appendChild(months);
 
-  const types = filter === 'all' ? ['drums', 'vocals'] : [filter];
+  // "All" is one merged row: drums + vocals minutes added together per day
+  const types = [filter];
   let yearMin = 0;
   const daysPractised = new Set();
 
   for (const type of types) {
-    const byDay = minutesByDay(sessions.filter(s => s.type === type));
+    const byDay = minutesByDay(visible());
     const row = el('div', 'graph-row');
     const label = el('div', 'graph-label');
-    const dot = el('span', 'dot'); dot.style.background = type === 'drums' ? 'var(--drums)' : 'var(--vocals)';
-    label.append(dot, type === 'drums' ? 'Drums' : 'Vocals');
+    const dot = el('span', 'dot'); dot.style.background = DOTS[type];
+    label.append(dot, LABELS[type]);
     const cells = el('div', 'cells');
     for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1)) {
       const key = iso(d);
@@ -191,7 +195,7 @@ function renderGraph() {
       const c = el('span', 'cell' + (d > end ? ' future' : ''));
       c.style.background = SCALES[type][level(min)];
       c.dataset.date = key;
-      c.dataset.tip = `${min ? min + ' min' : 'No'} ${type} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      c.dataset.tip = `${min ? min + ' min' : 'No'} ${type === 'all' ? 'practice' : type} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
       cells.appendChild(c);
       if (d <= end && min) { yearMin += min; daysPractised.add(key); }
     }
@@ -208,7 +212,7 @@ function renderGraph() {
   const legend = document.getElementById('legend');
   legend.innerHTML = '';
   legend.append('Less');
-  for (const c of SCALES[filter === 'vocals' ? 'vocals' : 'drums']) {
+  for (const c of SCALES[filter]) {
     const s = el('span', 'cell'); s.style.background = c; legend.appendChild(s);
   }
   legend.append('More');
