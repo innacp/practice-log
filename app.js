@@ -157,9 +157,68 @@ function graphRange() {
   return { start, end };
 }
 
+// ---------- Motion helpers ----------
+const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+let animateNextGraph = true;  // wave-in the squares on first load and tab switch
+let justAddedId = null;       // highlight the newest row
+let justAddedDate = null;     // pop the square that was just filled
+const shown = {};             // last numbers shown, for count-up
+
+function countTo(id, to, decimals = 0) {
+  const node = document.getElementById(id);
+  const from = shown[id] ?? 0;
+  shown[id] = to;
+  if (reducedMotion() || from === to) { node.textContent = to.toFixed(decimals).replace(/\.0$/, ''); return; }
+  const start = performance.now(), dur = 900;
+  const step = now => {
+    const t = Math.min(1, (now - start) / dur);
+    const eased = 1 - Math.pow(1 - t, 3);
+    node.textContent = (from + (to - from) * eased).toFixed(decimals).replace(/\.0$/, '');
+    if (t < 1) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+function confetti(fromEl) {
+  if (reducedMotion()) return;
+  const r = fromEl.getBoundingClientRect();
+  const colors = ['#D100FF', '#A13BFF', '#FF6EC7', '#EA6A1F', '#4C6EF5', '#FFD43B'];
+  for (let i = 0; i < 36; i++) {
+    const p = el('span', 'confetti');
+    p.style.background = colors[i % colors.length];
+    p.style.left = r.left + r.width / 2 + 'px';
+    p.style.top = r.top + r.height / 2 + 'px';
+    if (i % 3 === 0) p.style.borderRadius = '50%';
+    document.body.appendChild(p);
+    const angle = (Math.PI * 2 * i) / 36 + Math.random() * 0.4;
+    const dist = 80 + Math.random() * 120;
+    const dx = Math.cos(angle) * dist, dy = Math.sin(angle) * dist - 60;
+    p.animate([
+      { transform: 'translate(-50%, -50%) scale(1) rotate(0deg)', opacity: 1 },
+      { transform: `translate(${dx}px, ${dy}px) scale(1) rotate(${Math.random() * 540}deg)`, opacity: 1, offset: 0.6 },
+      { transform: `translate(${dx * 1.1}px, ${dy + 140}px) scale(0.6) rotate(${Math.random() * 720}deg)`, opacity: 0 },
+    ], { duration: 1100 + Math.random() * 500, easing: 'cubic-bezier(0.22, 1, 0.36, 1)', fill: 'forwards' }).onfinish = () => p.remove();
+    setTimeout(() => p.remove(), 2000); // backup if the tab was in the background
+  }
+}
+
+function movePill() {
+  const pill = document.querySelector('.tab-pill');
+  const on = document.querySelector('.tabs button.on');
+  if (!pill || !on) return;
+  pill.style.width = on.offsetWidth + 'px';
+  pill.style.transform = `translateX(${on.offsetLeft}px)`;
+}
+window.addEventListener('resize', movePill);
+
 function renderGraph() {
   const graph = document.getElementById('graph');
   graph.innerHTML = '';
+  // Keep the opening wave even if the online data arrives a moment later and re-renders
+  const opening = performance.now() < 2000;
+  graph.classList.toggle('animate', (animateNextGraph || opening) && !reducedMotion());
+  animateNextGraph = false;
+  const todayKey = today();
   const { start, end } = graphRange();
 
   // Month labels
@@ -189,10 +248,12 @@ function renderGraph() {
     const dot = el('span', 'dot'); dot.style.background = DOTS[type];
     label.append(dot, LABELS[type]);
     const cells = el('div', 'cells');
-    for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1)) {
+    let i = 0;
+    for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1), i++) {
       const key = iso(d);
       const min = byDay[key] || 0;
-      const c = el('span', 'cell' + (d > end ? ' future' : ''));
+      const c = el('span', 'cell' + (d > end ? ' future' : '') + (key === todayKey ? ' today' : '') + (key === justAddedDate ? ' just' : ''));
+      c.style.setProperty('--d', (Math.floor(i / 7) * 14 + (i % 7) * 18) + 'ms');
       c.style.background = SCALES[type][level(min)];
       c.dataset.date = key;
       c.dataset.tip = `${min ? min + ' min' : 'No'} ${type === 'all' ? 'practice' : type} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
@@ -239,11 +300,15 @@ function renderStats() {
   const weekAgo = new Date(); weekAgo.setDate(weekAgo.getDate() - 6);
   const week = list.filter(s => s.date >= iso(weekAgo) && s.date <= today()).reduce((a, s) => a + s.minutes, 0);
   const total = list.reduce((a, s) => a + s.minutes, 0);
-  document.getElementById('streak').textContent = current;
+  const streakEl = document.querySelector('.streak');
+  if ((shown.streak ?? 0) < current && shown.streak !== undefined) {
+    streakEl.classList.remove('bump'); void streakEl.offsetWidth; streakEl.classList.add('bump');
+  }
+  countTo('streak', current);
   document.querySelector('.streak .unit').textContent = current === 1 ? ' day' : ' days';
-  document.getElementById('longest').textContent = longest;
-  document.getElementById('week').textContent = week;
-  document.getElementById('hours').textContent = +(total / 60).toFixed(1);
+  countTo('longest', longest);
+  countTo('week', week);
+  countTo('hours', total / 60, 1);
 }
 
 function renderSessions() {
@@ -252,13 +317,17 @@ function renderSessions() {
   const list = [...visible()].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, 30);
   if (!list.length) { ul.appendChild(el('li', 'empty', 'No sessions yet. Log your first one above.')); return; }
   for (const s of list) {
-    const li = el('li');
+    const li = el('li', s.id === justAddedId ? 'new' : null);
     const del = el('button', 'del');
     del.type = 'button';
     del.setAttribute('aria-label', 'Delete session');
     del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     del.onclick = () => {
-      if (confirm('Delete this session?')) { sessions = sessions.filter(x => x.id !== s.id); save(); render(); cloudDelete(s.id); }
+      if (!confirm('Delete this session?')) return;
+      const finish = () => { sessions = sessions.filter(x => x.id !== s.id); save(); render(); cloudDelete(s.id); };
+      if (reducedMotion()) return finish();
+      li.classList.add('leaving');
+      li.addEventListener('animationend', finish, { once: true });
     };
     li.append(
       el('span', 's-date', pretty(s.date)),
@@ -299,7 +368,11 @@ form.addEventListener('submit', e => {
   sessions.push(session);
   save();
   form.notes.value = '';
+  justAddedId = session.id;
+  justAddedDate = session.date;
   render();
+  justAddedId = justAddedDate = null;
+  confetti(form.querySelector('.primary'));
   cloudSave([session]);
 });
 
@@ -308,6 +381,8 @@ const tabs = document.querySelectorAll('.tabs button');
 tabs.forEach(b => b.onclick = () => {
   filter = b.dataset.filter;
   tabs.forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+  movePill();
+  animateNextGraph = true;
   render();
 });
 
@@ -355,5 +430,7 @@ document.getElementById('import').onchange = async e => {
   e.target.value = '';
 };
 
+movePill();
+document.fonts && document.fonts.ready.then(movePill);
 render();   // show the cached copy right away
 connect();  // then load from the online database
