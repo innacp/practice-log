@@ -1,8 +1,117 @@
-// Practice Log — sessions are saved in this browser's localStorage.
+// Practice Log — sessions are saved online (Vercel + Redis, behind a passcode)
+// and cached in this browser's localStorage. Without the online database it
+// falls back to this browser only.
 const KEY = 'practice-log-v1';
+const PASS_KEY = 'practice-log-passcode';
 let sessions = load();
 let filter = 'all';
 let instrument = 'drums';
+let cloud = false; // true once the online database is unlocked
+
+// ---------- Online database ----------
+function getPass() { try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; } }
+function setPass(p) { try { p ? localStorage.setItem(PASS_KEY, p) : localStorage.removeItem(PASS_KEY); } catch {} }
+
+async function api(method, body, query = '') {
+  const r = await fetch('/api/sessions' + query, {
+    method,
+    headers: { 'x-passcode': getPass(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+    body: body ? JSON.stringify(body) : undefined,
+  });
+  let data = null;
+  try { data = await r.json(); } catch {}
+  return { status: r.status, data };
+}
+
+function setSync(text, kind) {
+  const s = document.getElementById('sync');
+  s.textContent = text;
+  s.className = 'sync ' + (kind || '');
+  s.hidden = !text;
+}
+
+function showLocked(message) {
+  document.body.classList.add('locked');
+  document.getElementById('unlock').hidden = false;
+  document.getElementById('lock').hidden = true;
+  const err = document.getElementById('unlock-error');
+  err.textContent = message || '';
+  err.hidden = !message;
+  setSync('Locked', 'warn');
+  document.getElementById('passcode').focus();
+}
+
+function showUnlocked() {
+  document.body.classList.remove('locked');
+  document.getElementById('unlock').hidden = true;
+  document.getElementById('lock').hidden = !cloud;
+}
+
+// Try to load from the database. Falls back to this-browser-only mode when no database exists.
+async function connect() {
+  let res;
+  try { res = await api('GET'); } catch { res = { status: 0 }; }
+
+  if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
+    cloud = true;
+    const remote = res.data.sessions;
+    const remoteIds = new Set(remote.map(s => s.id));
+    const localOnly = sessions.filter(s => !remoteIds.has(s.id));
+    sessions = remote.concat(localOnly);
+    save();
+    if (localOnly.length) {
+      const up = await api('POST', localOnly).catch(() => ({ status: 0 }));
+      if (up.status !== 200) { setSync('Some sessions not uploaded', 'err'); showUnlocked(); render(); return; }
+    }
+    setSync('Saved online', 'ok');
+    showUnlocked();
+    render();
+    return;
+  }
+
+  if (res.status === 401) {
+    cloud = false;
+    showLocked(getPass() ? 'That passcode didn’t work. Try again.' : '');
+    return;
+  }
+
+  // 404 (no API), 503 (database not set up yet) or offline: this browser only
+  cloud = false;
+  setSync(res.status === 503 ? 'Database not set up: saved on this device' : 'Saved on this device only', 'warn');
+  showUnlocked();
+  render();
+}
+
+async function cloudSave(list) {
+  if (!cloud) return;
+  setSync('Saving…');
+  const r = await api('POST', list).catch(() => ({ status: 0 }));
+  if (r.status === 200) setSync('Saved online', 'ok');
+  else if (r.status === 401) showLocked('Your passcode changed. Enter it again.');
+  else setSync('Not saved online. Will retry on reload', 'err');
+}
+
+async function cloudDelete(id) {
+  if (!cloud) return;
+  setSync('Saving…');
+  const r = await api('DELETE', null, '?id=' + encodeURIComponent(id)).catch(() => ({ status: 0 }));
+  setSync(r.status === 200 ? 'Saved online' : 'Delete not saved online', r.status === 200 ? 'ok' : 'err');
+}
+
+document.getElementById('unlock').addEventListener('submit', e => {
+  e.preventDefault();
+  setPass(document.getElementById('passcode').value);
+  document.getElementById('passcode').value = '';
+  connect();
+});
+document.getElementById('lock').onclick = () => {
+  setPass('');
+  cloud = false;
+  sessions = [];
+  save();
+  render();
+  showLocked();
+};
 
 const SCALES = {
   drums:  ['#EEF0F3', '#FFD8B8', '#FDA770', '#EA6A1F', '#B8430C'],
@@ -145,7 +254,7 @@ function renderSessions() {
     del.setAttribute('aria-label', 'Delete session');
     del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     del.onclick = () => {
-      if (confirm('Delete this session?')) { sessions = sessions.filter(x => x.id !== s.id); save(); render(); }
+      if (confirm('Delete this session?')) { sessions = sessions.filter(x => x.id !== s.id); save(); render(); cloudDelete(s.id); }
     };
     li.append(
       el('span', 's-date', pretty(s.date)),
@@ -178,14 +287,16 @@ form.addEventListener('submit', e => {
   e.preventDefault();
   const minutes = parseInt(form.minutes.value, 10);
   if (!minutes || !form.date.value) return;
-  sessions.push({
+  const session = {
     id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
     date: form.date.value, type: instrument, minutes,
     notes: form.notes.value.trim(), created: Date.now(),
-  });
+  };
+  sessions.push(session);
   save();
   form.notes.value = '';
   render();
+  cloudSave([session]);
 });
 
 // Tabs
@@ -234,9 +345,11 @@ document.getElementById('import').onchange = async e => {
     const added = data.filter(s => s && s.id && s.date && (s.type === 'drums' || s.type === 'vocals') && s.minutes > 0 && !ids.has(s.id));
     sessions.push(...added);
     save(); render();
+    if (added.length) cloudSave(added);
     alert(`Imported ${added.length} session(s).`);
   } catch { alert("That file doesn't look like a Practice Log export."); }
   e.target.value = '';
 };
 
-render();
+render();   // show the cached copy right away
+connect();  // then load from the online database
