@@ -12,26 +12,30 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
 </head>
-<body class="timer-page">
+<body class="timer-page" data-title="title.timer">
   <header class="topbar">
     <div class="wrap topbar-inner">
       <a class="brand" href="/">
         <img class="logo" src="favicon.svg" width="34" height="34" alt="">
         <span class="wordmark">Practice<b>Log</b></span>
       </a>
-      <nav class="nav" aria-label="Pages">
-        <a href="/">Log</a>
-        <a href="/timer" aria-current="page">Timer</a>
-        <a href="/theory">Theory</a>
+      <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
+        <a href="/" data-i18n="nav.log">Log</a>
+        <a href="/timer" aria-current="page" data-i18n="nav.timer">Timer</a>
+        <a href="/theory" data-i18n="nav.theory">Theory</a>
       </nav>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="uk" lang="uk">UA</button>
+      </div>
     </div>
   </header>
 
   <main class="wrap timer-main">
     <section class="card timer-card">
-      <div class="toggle" role="group" aria-label="Instrument">
-        <button type="button" data-type="drums" class="on" aria-pressed="true">Drums</button>
-        <button type="button" data-type="vocals" aria-pressed="false">Vocals</button>
+      <div class="toggle" role="group" data-i18n-aria="instrument" aria-label="Instrument">
+        <button type="button" data-type="drums" class="on" aria-pressed="true" data-i18n="drums">Drums</button>
+        <button type="button" data-type="vocals" aria-pressed="false" data-i18n="vocals">Vocals</button>
       </div>
 
       <div class="dial" id="dial">
@@ -45,8 +49,8 @@
         </div>
       </div>
 
-      <div class="chips" role="group" aria-label="Session goal">
-        <span class="chips-label">Goal</span>
+      <div class="chips" role="group" data-i18n-aria="timer.goalGroup" aria-label="Session goal">
+        <span class="chips-label" data-i18n="timer.goal">Goal</span>
         <button type="button" class="chip on" data-target="0">None</button>
         <button type="button" class="chip" data-target="15">15m</button>
         <button type="button" class="chip" data-target="20">20m</button>
@@ -56,18 +60,18 @@
 
       <div class="timer-controls" id="controls">
         <button type="button" class="primary big" id="start">Start</button>
-        <button type="button" class="ghost big" id="finish" disabled>Finish</button>
+        <button type="button" class="ghost big" id="finish" disabled data-i18n="timer.finish">Finish</button>
       </div>
-      <button type="button" class="link" id="discard" hidden>Discard this session</button>
+      <button type="button" class="link" id="discard" hidden data-i18n="timer.discard">Discard this session</button>
 
       <form class="finish-form" id="finish-form" hidden>
         <p class="finish-title" id="finish-title"></p>
-        <label>What did you work on?
-          <input type="text" id="notes" placeholder="e.g. paradiddles at 90 bpm" maxlength="500">
+        <label><span data-i18n="log.notes">What did you work on?</span>
+          <input type="text" id="notes" placeholder="e.g. paradiddles at 90 bpm" data-i18n-ph="log.ph" maxlength="500">
         </label>
         <div class="timer-controls">
-          <button type="submit" class="primary big">Save session</button>
-          <button type="button" class="ghost big" id="keep-going">Keep going</button>
+          <button type="submit" class="primary big" data-i18n="timer.save">Save session</button>
+          <button type="button" class="ghost big" id="keep-going" data-i18n="timer.keep">Keep going</button>
         </div>
       </form>
 
@@ -77,6 +81,7 @@
     <p class="muted timer-today" id="today-total"></p>
   </main>
 
+  <script src="i18n.js"></script>
   <script src="store.js"></script>
   <script src="timer.js"></script>
 </body>

@@ -2,8 +2,8 @@
 const KEY = 'practice-log-v1';
 const PASS_KEY = 'practice-log-passcode';
 const SETTINGS_KEY = 'practice-log-settings';
-const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const MONTHS_LONG = ['January','February','March','April','May','June','July','August','September','October','November','December'];
+const monthShort = i => t('months')[i];
+const monthLong = i => t('monthsLong')[i];
 const DEFAULT_SETTINGS = { weeklyGoal: 180 }; // minutes
 
 function loadSessions() {
@@ -45,12 +45,12 @@ const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls)
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-// 135 -> "2h 15m", 45 -> "45m", 120 -> "2h"
+// 135 -> "2h 15m" (en) or "2 год 15 хв" (uk)
 function fmtMin(min) {
   min = Math.round(min);
   const h = Math.floor(min / 60), m = min % 60;
-  if (!h) return `${m}m`;
-  return m ? `${h}h ${m}m` : `${h}h`;
+  if (!h) return t('dur.m', { m });
+  return m ? t('dur.hm', { h, m }) : t('dur.h', { h });
 }
 
 // Monday of the week that contains d

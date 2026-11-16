@@ -8,21 +8,26 @@ let instrument = 'drums';
 let cloud = false; // true once the online database is unlocked
 function save() { saveSessions(sessions); }
 
-function setSync(text, kind) {
+let syncState = null;    // [key, kind] of the badge, re-translated on language change
+let unlockErrKey = null;
+function setSync(key, kind) {
+  syncState = key ? [key, kind] : null;
   const s = document.getElementById('sync');
+  const text = key ? t(key) : '';
   s.textContent = text;
   s.className = 'sync ' + (kind || '');
   s.hidden = !text;
 }
 
-function showLocked(message) {
+function showLocked(msgKey) {
+  unlockErrKey = msgKey || null;
   document.body.classList.add('locked');
   document.getElementById('unlock').hidden = false;
   document.getElementById('lock').hidden = true;
   const err = document.getElementById('unlock-error');
-  err.textContent = message || '';
-  err.hidden = !message;
-  setSync('Locked', 'warn');
+  err.textContent = msgKey ? t(msgKey) : '';
+  err.hidden = !msgKey;
+  setSync('sync.locked', 'warn');
   document.getElementById('passcode').focus();
 }
 
@@ -53,9 +58,9 @@ async function connect() {
     }
     if (localOnly.length) {
       const up = await api('POST', localOnly).catch(() => ({ status: 0 }));
-      if (up.status !== 200) { setSync('Some sessions not uploaded', 'err'); showUnlocked(); render(); return; }
+      if (up.status !== 200) { setSync('sync.partial', 'err'); showUnlocked(); render(); return; }
     }
-    setSync('Saved online', 'ok');
+    setSync('sync.ok', 'ok');
     showUnlocked();
     render();
     return;
@@ -63,31 +68,31 @@ async function connect() {
 
   if (res.status === 401) {
     cloud = false;
-    showLocked(getPass() ? 'That passcode didn’t work. Try again.' : '');
+    showLocked(getPass() ? 'unlock.wrong' : '');
     return;
   }
 
   // 404 (no API), 503 (database not set up yet) or offline: this browser only
   cloud = false;
-  setSync(res.status === 503 ? 'Database not set up: saved on this device' : 'Saved on this device only', 'warn');
+  setSync(res.status === 503 ? 'sync.nodb' : 'sync.local', 'warn');
   showUnlocked();
   render();
 }
 
 async function cloudSave(list) {
   if (!cloud) return;
-  setSync('Saving…');
+  setSync('sync.saving');
   const r = await api('POST', list).catch(() => ({ status: 0 }));
-  if (r.status === 200) setSync('Saved online', 'ok');
-  else if (r.status === 401) showLocked('Your passcode changed. Enter it again.');
-  else setSync('Not saved online. Will retry on reload', 'err');
+  if (r.status === 200) setSync('sync.ok', 'ok');
+  else if (r.status === 401) showLocked('unlock.changed');
+  else setSync('sync.fail', 'err');
 }
 
 async function cloudDelete(id) {
   if (!cloud) return;
-  setSync('Saving…');
+  setSync('sync.saving');
   const r = await api('DELETE', null, '?id=' + encodeURIComponent(id)).catch(() => ({ status: 0 }));
-  setSync(r.status === 200 ? 'Saved online' : 'Delete not saved online', r.status === 200 ? 'ok' : 'err');
+  setSync(r.status === 200 ? 'sync.ok' : 'sync.delfail', r.status === 200 ? 'ok' : 'err');
 }
 
 document.getElementById('unlock').addEventListener('submit', e => {
@@ -111,8 +116,9 @@ const SCALES = {
   all:    ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'],
 };
 const DOTS = { drums: 'var(--drums)', vocals: 'var(--vocals)', all: '#CC3FEB' };
-const LABELS = { drums: 'Drums', vocals: 'Vocals', all: 'All' };
-const pretty = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`; };
+const typeName = type => t(type);              // "Drums" / "Барабани"
+const typeLower = type => t(type + '.lower');  // "drums" / "барабани"
+const pretty = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`; };
 
 function visible() {
   return filter === 'all' ? sessions : sessions.filter(s => s.type === filter);
@@ -183,7 +189,7 @@ function renderGraph() {
   for (let w = 0; w < 53; w++) {
     const d = new Date(start); d.setDate(start.getDate() + w * 7);
     if (d.getMonth() !== last && d.getDate() <= 7) {
-      const m = el('span', null, MONTHS[d.getMonth()]);
+      const m = el('span', null, monthShort(d.getMonth()));
       m.style.gridColumn = `${w + 2} / span 4`;
       months.appendChild(m);
       last = d.getMonth();
@@ -201,7 +207,7 @@ function renderGraph() {
     const row = el('div', 'graph-row');
     const label = el('div', 'graph-label');
     const dot = el('span', 'dot'); dot.style.background = DOTS[type];
-    label.append(dot, LABELS[type]);
+    label.append(dot, typeName(type));
     const cells = el('div', 'cells');
     let i = 0;
     for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1), i++) {
@@ -211,7 +217,8 @@ function renderGraph() {
       c.style.setProperty('--d', (Math.floor(i / 7) * 14 + (i % 7) * 18) + 'ms');
       c.style.background = SCALES[type][level(min)];
       c.dataset.date = key;
-      c.dataset.tip = `${min ? min + ' min' : 'No'} ${type === 'all' ? 'practice' : type} · ${d.getDate()} ${MONTHS[d.getMonth()]} ${d.getFullYear()}`;
+      c.dataset.tip = (min ? t('tip.some', { n: min, type: t('tip.' + type) }) : t('tip.none', { type: t('tip.' + type) })) +
+        ` · ${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`;
       cells.appendChild(c);
       if (d <= end && min) { yearMin += min; daysPractised.add(key); }
     }
@@ -223,15 +230,15 @@ function renderGraph() {
   scroller.scrollLeft = scroller.scrollWidth;
 
   document.getElementById('year-summary').textContent =
-    `${yearMin.toLocaleString()} minutes · ${daysPractised.size} day${daysPractised.size === 1 ? '' : 's'} practised`;
+    t('year.summary', { min: yearMin.toLocaleString(LANG), days: daysPractised.size, dayWord: plural(daysPractised.size, 'days') });
 
   const legend = document.getElementById('legend');
   legend.innerHTML = '';
-  legend.append('Less');
+  legend.append(t('legend.less'));
   for (const c of SCALES[filter]) {
     const s = el('span', 'cell'); s.style.background = c; legend.appendChild(s);
   }
-  legend.append('More');
+  legend.append(t('legend.more'));
 }
 
 function streaks(byDay) {
@@ -264,7 +271,7 @@ function renderStats() {
   const fire = document.querySelector('.fire');
   fire.classList.toggle('out', current === 0);
   fire.style.setProperty('--heat', (1.1 + Math.min(current, 30) / 30 * 0.4).toFixed(2));
-  document.querySelector('.streak .unit').textContent = current === 1 ? ' day' : ' days';
+  document.querySelector('.streak .unit').textContent = ' ' + plural(current, 'days');
   countTo('longest', longest);
   countTo('week', week);
   countTo('hours', total / 60, 1);
@@ -274,15 +281,15 @@ function renderSessions() {
   const ul = document.getElementById('sessions');
   ul.innerHTML = '';
   const list = [...visible()].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, 30);
-  if (!list.length) { ul.appendChild(el('li', 'empty', 'No sessions yet. Log your first one above.')); return; }
+  if (!list.length) { ul.appendChild(el('li', 'empty', t('sessions.empty'))); return; }
   for (const s of list) {
     const li = el('li', s.id === justAddedId ? 'new' : null);
     const del = el('button', 'del');
     del.type = 'button';
-    del.setAttribute('aria-label', 'Delete session');
+    del.setAttribute('aria-label', t('sessions.del'));
     del.innerHTML = '<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>';
     del.onclick = () => {
-      if (!confirm('Delete this session?')) return;
+      if (!confirm(t('sessions.confirm'))) return;
       const finish = () => { sessions = sessions.filter(x => x.id !== s.id); save(); render(); cloudDelete(s.id); };
       if (reducedMotion()) return finish();
       li.classList.add('leaving');
@@ -290,8 +297,8 @@ function renderSessions() {
     };
     li.append(
       el('span', 's-date', pretty(s.date)),
-      el('span', `tag ${s.type}`, s.type),
-      el('span', 's-min', `${s.minutes} min`),
+      el('span', `tag ${s.type}`, typeLower(s.type)),
+      el('span', 's-min', t('min', { n: s.minutes })),
       el('span', 's-notes', s.notes || ''),
       del,
     );
@@ -318,26 +325,26 @@ function renderGoal() {
   ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, pct));
   document.getElementById('goal-ring-wrap').classList.toggle('done', pct >= 1);
   document.getElementById('goal-pct').textContent = Math.round(pct * 100) + '%';
-  document.getElementById('goal-of').textContent = `${fmtMin(done)} of ${fmtMin(goal)}`;
+  document.getElementById('goal-of').textContent = t('goal.of', { done: fmtMin(done), goal: fmtMin(goal) });
 
   const daysLeft = 7 - ((new Date().getDay() + 6) % 7); // including today
   const left = Math.max(0, goal - done);
   document.getElementById('goal-sub').textContent = pct >= 1
-    ? `Goal reached! ${fmtMin(done - goal) === '0m' ? 'Right on target.' : fmtMin(done - goal) + ' extra so far.'}`
-    : `${fmtMin(left)} to go · about ${fmtMin(Math.ceil(left / daysLeft))} a day`;
+    ? t('goal.reached') + ' ' + (done === goal ? t('goal.exact') : t('goal.extra', { x: fmtMin(done - goal) }))
+    : t('goal.left', { left: fmtMin(left), perDay: fmtMin(Math.ceil(left / daysLeft)) });
 
   // Mon–Sun bars
   const bars = document.getElementById('week-bars');
   bars.innerHTML = '';
   const daily = goal / 7;
   const max = Math.max(daily * 1.5, ...Object.values(byDay), 1);
-  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach((label, i) => {
+  t('weekLetters').forEach((label, i) => {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const key = iso(d), min = byDay[key] || 0;
     const col = el('div', 'wb' + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' future' : ''));
     const dMin = drumsByDay[key] || 0, vMin = min - dMin;
-    col.title = `${d.toLocaleDateString(undefined, { weekday: 'long' })}: ` +
-      (min ? [dMin && `drums ${fmtMin(dMin)}`, vMin && `vocals ${fmtMin(vMin)}`].filter(Boolean).join(', ') : 'no practice');
+    col.title = `${d.toLocaleDateString(LANG, { weekday: 'long' })}: ` +
+      (min ? [dMin && `${typeLower('drums')} ${fmtMin(dMin)}`, vMin && `${typeLower('vocals')} ${fmtMin(vMin)}`].filter(Boolean).join(', ') : t('goal.none'));
     const track = el('div', 'wb-track');
     // Stacked bar: drums (green) at the bottom, vocals (orange) on top
     const bar = el('div', 'wb-bar');
@@ -378,7 +385,7 @@ goalForm.addEventListener('submit', async e => {
   renderGoal();
   if (cloud) {
     const r = await api('PUT', settings, '', '/api/settings');
-    setSync(r.status === 200 ? 'Saved online' : 'Goal not saved online', r.status === 200 ? 'ok' : 'err');
+    setSync(r.status === 200 ? 'sync.ok' : 'sync.goalfail', r.status === 200 ? 'ok' : 'err');
   }
 });
 
@@ -394,14 +401,14 @@ function renderRecap() {
   const m = recapMonth;
   const now = new Date();
   const isCurrent = m.getFullYear() === now.getFullYear() && m.getMonth() === now.getMonth();
-  document.getElementById('recap-month').textContent = `${MONTHS_LONG[m.getMonth()]} ${m.getFullYear()}`;
+  document.getElementById('recap-month').textContent = `${monthLong(m.getMonth())} ${m.getFullYear()}`;
   document.getElementById('recap-next').disabled = isCurrent;
 
   const body = document.getElementById('recap-body');
   body.innerHTML = '';
   const list = monthSessions(m);
   if (!list.length) {
-    body.appendChild(el('p', 'recap-empty', isCurrent ? 'Nothing logged this month yet. Your recap builds up as you practise.' : `No practice logged in ${MONTHS_LONG[m.getMonth()]}.`));
+    body.appendChild(el('p', 'recap-empty', isCurrent ? t('recap.emptyNow') : t('recap.empty', { month: monthLong(m.getMonth()) })));
     return;
   }
 
@@ -417,10 +424,10 @@ function renderRecap() {
   const stats = el('div', 'recap-stats');
   const best = new Date(bestKey + 'T00:00');
   [
-    [fmtMin(total), 'total practice'],
-    [String(Object.keys(byDay).length), 'days practised'],
-    [String(longest), 'longest streak'],
-    [`${best.getDate()} ${MONTHS[best.getMonth()]}`, `best day · ${fmtMin(bestMin)}`],
+    [fmtMin(total), t('recap.total')],
+    [String(Object.keys(byDay).length), plural(Object.keys(byDay).length, 'recap.daysWord')],
+    [String(longest), t('recap.longest')],
+    [`${best.getDate()} ${monthShort(best.getMonth())}`, t('recap.best', { t: fmtMin(bestMin) })],
   ].forEach(([v, l]) => { const d = el('div', 'rs'); d.append(el('b', null, v), el('span', null, l)); stats.appendChild(d); });
   body.appendChild(stats);
 
@@ -429,7 +436,7 @@ function renderRecap() {
     const change = Math.round((total - prevTotal) / prevTotal * 100);
     const up = change >= 0;
     body.appendChild(el('p', 'recap-change ' + (up ? 'up' : 'down'),
-      `${up ? '▲' : '▼'} ${Math.abs(change)}% vs ${MONTHS_LONG[prev.getMonth()]}${isCurrent ? ' so far' : ''}`));
+      t('recap.change', { arrow: up ? '▲' : '▼', pct: Math.abs(change), month: monthLong(prev.getMonth()) }) + (isCurrent ? t('recap.soFar') : '')));
   }
 
   // Drums / vocals split
@@ -440,15 +447,15 @@ function renderRecap() {
   bar.append(dPart, vPart);
   const legend = el('div', 'split-legend');
   legend.append(
-    el('span', 'k drums', `Drums ${fmtMin(drums)} · ${Math.round(drums / total * 100)}%`),
-    el('span', 'k vocals', `Vocals ${fmtMin(vocals)} · ${Math.round(vocals / total * 100)}%`),
+    el('span', 'k drums', `${typeName('drums')} ${fmtMin(drums)} · ${Math.round(drums / total * 100)}%`),
+    el('span', 'k vocals', `${typeName('vocals')} ${fmtMin(vocals)} · ${Math.round(vocals / total * 100)}%`),
   );
   split.append(bar, legend);
   body.appendChild(split);
 
   // Mini calendar
   const cal = el('div', 'mini-cal');
-  ['M', 'T', 'W', 'T', 'F', 'S', 'S'].forEach(d => cal.appendChild(el('span', 'mc-head', d)));
+  t('weekLetters').forEach(d => cal.appendChild(el('span', 'mc-head', d)));
   const offset = (m.getDay() + 6) % 7;
   for (let i = 0; i < offset; i++) cal.appendChild(el('span', 'mc-blank'));
   const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
@@ -458,7 +465,7 @@ function renderRecap() {
     const c = el('span', 'mc-day' + (min ? ' has' : '') + (key === today() ? ' is-today' : ''), String(d));
     c.style.background = min ? SCALES.all[level(min)] : '';
     if (level(min) >= 3) c.style.color = '#fff';
-    c.title = min ? `${d} ${MONTHS[m.getMonth()]}: ${fmtMin(min)}` : `${d} ${MONTHS[m.getMonth()]}`;
+    c.title = min ? `${d} ${monthShort(m.getMonth())}: ${fmtMin(min)}` : `${d} ${monthShort(m.getMonth())}`;
     cal.appendChild(c);
   }
   body.appendChild(cal);
@@ -469,9 +476,28 @@ document.getElementById('recap-next').onclick = () => { recapMonth.setMonth(reca
 
 function render() { renderGraph(); renderStats(); renderGoal(); renderRecap(); renderSessions(); }
 
-// Header date
-document.getElementById('today').textContent =
-  new Date().toLocaleDateString(undefined, { weekday: 'long', day: 'numeric', month: 'long' });
+// Header date + translated dropdown options
+function renderStatic() {
+  document.getElementById('today').textContent =
+    new Date().toLocaleDateString(LANG === 'uk' ? 'uk-UA' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
+  document.querySelectorAll('#minutes-select option').forEach(o => {
+    o.textContent = +o.value >= 60 ? plural(o.value / 60, 'hours') : t('min', { n: o.value });
+  });
+  document.querySelectorAll('#goal-hours option').forEach(o => {
+    o.textContent = +o.value % 60 ? fmtMin(+o.value) : plural(o.value / 60, 'hours');
+  });
+}
+renderStatic();
+
+// Switching language re-draws everything that JavaScript wrote
+document.addEventListener('langchange', () => {
+  renderStatic();
+  if (syncState) setSync(syncState[0], syncState[1]);
+  if (unlockErrKey) document.getElementById('unlock-error').textContent = t(unlockErrKey);
+  animateNextGraph = true;
+  render();
+  movePill();
+});
 
 // Instrument toggle
 const toggles = document.querySelectorAll('.toggle button');
@@ -552,8 +578,8 @@ document.getElementById('import').onchange = async e => {
     sessions.push(...added);
     save(); render();
     if (added.length) cloudSave(added);
-    alert(`Imported ${added.length} session(s).`);
-  } catch { alert("That file doesn't look like a Practice Log export."); }
+    alert(t('import.ok', { n: added.length }));
+  } catch { alert(t('import.bad')); }
   e.target.value = '';
 };
 

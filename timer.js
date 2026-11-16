@@ -44,18 +44,18 @@ function draw() {
   $('dial').classList.toggle('vocals', state.type === 'vocals');
 
   let sub;
-  if (running()) sub = targetMs ? (ms >= targetMs ? 'Goal reached. Keep going!' : `${fmtMin(Math.ceil((targetMs - ms) / 60000))} to go`) : 'Practising…';
-  else if (ms > 0) sub = 'Paused';
-  else sub = 'Ready when you are';
-  if (!$('finish-form').hidden) sub = 'Finished';
+  if (running()) sub = targetMs ? (ms >= targetMs ? t('timer.reached') : t('timer.toGo', { t: fmtMin(Math.ceil((targetMs - ms) / 60000)) })) : t('timer.practising');
+  else if (ms > 0) sub = t('timer.paused');
+  else sub = t('timer.ready');
+  if (!$('finish-form').hidden) sub = t('timer.finished');
   $('dial-sub').textContent = sub;
 
-  document.title = running() ? `${fmtClock(ms)} · ${state.type === 'drums' ? 'Drums' : 'Vocals'}` : 'Timer · Practice Log';
+  document.title = running() ? `${fmtClock(ms)} · ${t(state.type)}` : t('title.timer');
 }
 
 function syncControls() {
   const ms = elapsedMs();
-  $('start').textContent = running() ? 'Pause' : ms > 0 ? 'Resume' : 'Start';
+  $('start').textContent = running() ? t('timer.pause') : ms > 0 ? t('timer.resume') : t('timer.start');
   $('start').classList.toggle('paused', running());
   $('finish').disabled = ms === 0;
   $('discard').hidden = ms === 0 || !$('finish-form').hidden;
@@ -127,10 +127,10 @@ $('finish').onclick = () => {
   if (running()) pause();
   const min = Math.round(elapsedMs() / 60000);
   if (min < 1) {
-    showMsg('Practise for at least a minute to save a session.', 'warn');
+    showMsg(t('timer.min1'), 'warn');
     return;
   }
-  $('finish-title').textContent = `Nice work! ${fmtMin(min)} of ${state.type}.`;
+  $('finish-title').textContent = niceText(min);
   $('finish-form').hidden = false;
   $('controls').hidden = true;
   syncControls();
@@ -144,7 +144,7 @@ $('keep-going').onclick = () => {
 };
 
 $('discard').onclick = () => {
-  if (confirm('Discard this session? The time won’t be saved.')) reset();
+  if (confirm(t('timer.discardConfirm'))) reset();
 };
 
 $('finish-form').addEventListener('submit', async e => {
@@ -163,18 +163,21 @@ $('finish-form').addEventListener('submit', async e => {
   renderToday();
 
   const r = await api('POST', [session]);
-  if (r.status === 200) showMsg(`Saved ${fmtMin(minutes)} of ${session.type} online.`, 'ok');
-  else showMsg(`Saved ${fmtMin(minutes)} of ${session.type} on this device. It will upload next time you open the log unlocked.`, 'warn');
+  lastSaved = { key: r.status === 200 ? 'timer.savedOk' : 'timer.savedLocal', vars: { t: fmtMin(minutes), type: t(session.type + '.lower') }, minutes, type: session.type };
+  showMsg(t(lastSaved.key, lastSaved.vars), r.status === 200 ? 'ok' : 'warn', true);
 });
 
-function showMsg(text, kind) {
+let lastSaved = null; // remembered so the message can be re-translated
+function niceText(min) { return t('timer.nice', { t: fmtMin(min), type: t(state.type + '.lower') }); }
+function showMsg(text, kind, withLink) {
   const m = $('saved-msg');
   m.innerHTML = '';
   m.append(text + ' ');
-  if (kind === 'ok' || kind === 'warn') {
-    const a = el('a', null, 'See your log');
+  if (!withLink) lastSaved = null;
+  if (withLink) {
+    const a = el('a', null, t('timer.seeLog'));
     a.href = '/';
-    if (text.startsWith('Saved')) m.append(a);
+    m.append(a);
   }
   m.className = 'saved-msg ' + (kind || '');
   m.hidden = false;
@@ -182,7 +185,7 @@ function showMsg(text, kind) {
 
 document.querySelectorAll('.toggle button').forEach(b => b.onclick = () => {
   state.type = b.dataset.type; saveTimer(); syncControls();
-  if ($('finish-form').hidden === false) $('finish-title').textContent = `Nice work! ${fmtMin(Math.round(elapsedMs() / 60000))} of ${state.type}.`;
+  if ($('finish-form').hidden === false) $('finish-title').textContent = niceText(Math.round(elapsedMs() / 60000));
 });
 document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
   state.target = +c.dataset.target;
@@ -191,12 +194,27 @@ document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
 });
 
 function renderToday() {
-  const t = today();
-  const list = loadSessions().filter(s => s.date === t);
+  const todayKey = today();
+  const list = loadSessions().filter(s => s.date === todayKey);
   const total = list.reduce((a, s) => a + s.minutes, 0);
-  $('today-total').textContent = total ? `Practised today: ${fmtMin(total)} across ${list.length} session${list.length === 1 ? '' : 's'}` : 'Nothing logged today yet.';
+  $('today-total').textContent = total
+    ? t('timer.today', { t: fmtMin(total), n: list.length, word: plural(list.length, 'sessionsWord') })
+    : t('timer.todayNone');
 }
 
+function renderChips() {
+  document.querySelectorAll('.chip[data-target]').forEach(c => {
+    const n = +c.dataset.target;
+    c.textContent = !n ? t('timer.none') : n % 60 ? t('dur.m', { m: n }) : t('dur.h', { h: n / 60 });
+  });
+}
+document.addEventListener('langchange', () => {
+  renderChips(); syncControls(); renderToday();
+  if (!$('finish-form').hidden) $('finish-title').textContent = niceText(Math.round(elapsedMs() / 60000));
+  if (lastSaved && !$('saved-msg').hidden) showMsg(t(lastSaved.key, lastSaved.vars), lastSaved.key === 'timer.savedOk' ? 'ok' : 'warn', true);
+});
+
+renderChips();
 syncControls();
 renderToday();
 if (running()) keepAwake(true);

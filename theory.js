@@ -11,16 +11,24 @@ function renderProgress() {
   const n = lessons.filter(l => done.has(l.id)).length;
   document.getElementById('lp-fill').style.width = (n / lessons.length * 100) + '%';
   document.getElementById('lp-text').textContent =
-    n === lessons.length ? `All ${n} lessons done. Nice work!` : `${n} of ${lessons.length} lessons done`;
+    n === lessons.length ? t('theory.allDone', { n }) : t('theory.progress', { n, total: lessons.length });
 }
 
+// "Basics · 3 min" under each title
+function renderMeta() {
+  lessons.forEach(l => {
+    l.querySelector('.l-title small').textContent = `${t('l.' + l.dataset.topic)} · ${t('l.min', { n: l.dataset.mins })}`;
+  });
+}
+
+const doneSyncs = [];
 lessons.forEach(l => {
   const btn = el('button', 'ghost mark-done');
   btn.type = 'button';
   const sync = () => {
     const on = done.has(l.id);
     l.classList.toggle('is-done', on);
-    btn.textContent = on ? '✓ Done' : 'Mark as done';
+    btn.textContent = on ? t('theory.done') : t('theory.mark');
     btn.setAttribute('aria-pressed', on);
   };
   btn.onclick = () => {
@@ -30,8 +38,10 @@ lessons.forEach(l => {
     if (!was) confetti(btn);
   };
   l.querySelector('.l-body').appendChild(btn);
+  doneSyncs.push(sync);
   sync();
 });
+renderMeta();
 renderProgress();
 
 // Open a lesson from a link like /theory#rudiments
@@ -87,7 +97,7 @@ const hat = t => noise(t, 0.05, 7000, 0.25);
 let stopCurrent = null;
 function stopAll() { if (stopCurrent) stopCurrent(); stopCurrent = null; }
 
-function loopDemo(btn, label, stepSec, steps, onStep, onVisual) {
+function loopDemo(btn, labelKey, stepSec, steps, onStep, onVisual) {
   if (btn.classList.contains('playing')) { stopAll(); return; }
   stopAll();
   const a = audio();
@@ -102,11 +112,11 @@ function loopDemo(btn, label, stepSec, steps, onStep, onVisual) {
   };
   tick();
   timer = setInterval(tick, 25);
-  btn.classList.add('playing'); btn.textContent = 'Stop';
+  btn.classList.add('playing'); btn.textContent = t('theory.stop');
   stopCurrent = () => {
     clearInterval(timer);
     live = false;
-    btn.classList.remove('playing'); btn.textContent = label;
+    btn.classList.remove('playing'); btn.textContent = t(labelKey);
     onVisual && onVisual(-1);
   };
 }
@@ -120,13 +130,13 @@ document.querySelectorAll('[data-bpm]').forEach(c => c.onclick = () => {
   if (btn.classList.contains('playing')) { stopAll(); btn.click(); }
 });
 document.getElementById('click-play').onclick = e =>
-  loopDemo(e.currentTarget, 'Play click', 60 / bpm, 4, (s, t) => tone(s === 0 ? 1500 : 1000, t, 0.06, 'square', 0.15));
+  loopDemo(e.currentTarget, 'theory.playClick', 60 / bpm, 4, (s, t) => tone(s === 0 ? 1500 : 1000, t, 0.06, 'square', 0.15));
 
 // Rock beat: 8 eighth notes at 90 BPM, columns light up as they play
 const grid = document.getElementById('beat-grid');
 const cols = [...Array(8)].map((_, i) => [...grid.children].filter((c, idx) => idx % 9 === i + 1));
 document.getElementById('beat-play').onclick = e =>
-  loopDemo(e.currentTarget, 'Play beat', 60 / 90 / 2, 8,
+  loopDemo(e.currentTarget, 'theory.playBeat', 60 / 90 / 2, 8,
     (s, t) => { hat(t); if (s === 2 || s === 6) snare(t); if (s === 0 || s === 4) kick(t); },
     s => cols.forEach((col, i) => col.forEach(c => c.classList.toggle('now', i === s))));
 
@@ -146,3 +156,11 @@ document.getElementById('scale-play').onclick = () => {
 // Stop sounds when a lesson is closed or the page is hidden
 lessons.forEach(l => l.addEventListener('toggle', () => { if (!l.open) stopAll(); }));
 document.addEventListener('visibilitychange', () => { if (document.hidden) stopAll(); });
+
+// Language switch: re-translate what JavaScript wrote
+document.addEventListener('langchange', () => {
+  renderMeta();
+  renderProgress();
+  doneSyncs.forEach(f => f());
+  document.querySelectorAll('.primary.playing').forEach(b => { b.textContent = t('theory.stop'); });
+});
