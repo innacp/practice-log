@@ -39,6 +39,9 @@ function draw() {
   fill.style.strokeDashoffset = CIRC * (1 - progress);
   $('dial').classList.toggle('done', !!targetMs && ms >= targetMs);
   $('dial').classList.toggle('running', running());
+  // Ring takes the instrument's colour: green for drums, orange for vocals
+  $('dial').classList.toggle('drums', state.type === 'drums');
+  $('dial').classList.toggle('vocals', state.type === 'vocals');
 
   let sub;
   if (running()) sub = targetMs ? (ms >= targetMs ? 'Goal reached. Keep going!' : `${fmtMin(Math.ceil((targetMs - ms) / 60000))} to go`) : 'Practising…';

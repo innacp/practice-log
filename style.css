@@ -404,8 +404,13 @@ a.brand { color: inherit; text-decoration: none; }
 .wb span { font-size: 12px; color: var(--muted); font-weight: 600; }
 .wb.is-today span { color: #B000D9; }
 .wb-track { position: relative; flex: 1; width: 100%; max-width: 26px; border-radius: 8px; background: rgba(58, 16, 70, 0.06); overflow: hidden; }
-.wb-bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 8px; background: #E58CFA; transform-origin: bottom; animation: grow 0.8s var(--ease) both; animation-delay: var(--d, 0s); }
-.wb-bar.hit { background: #C800F5; }
+.wb-bar { position: absolute; left: 0; right: 0; bottom: 0; border-radius: 8px; overflow: hidden; display: flex; flex-direction: column; transform-origin: bottom; animation: grow 0.8s var(--ease) both; animation-delay: var(--d, 0s); }
+.wb-bar .seg { display: block; min-height: 0; }
+.wb-bar .seg.drums { background: var(--drums); }
+.wb-bar .seg.vocals { background: var(--vocals); }
+.wb-bar .seg + .seg { box-shadow: inset 0 2px 0 rgba(255, 255, 255, 0.7); }
+.split-legend.goal-legend { justify-content: flex-start; gap: 16px; margin-top: 14px; }
+.goal-legend .target::before { width: 12px; height: 0; border-radius: 0; border-top: 2px dashed rgba(58, 16, 70, 0.35); vertical-align: 3px; }
 .wb.future .wb-track { background: rgba(58, 16, 70, 0.03); }
 .wb-line { position: absolute; left: 0; right: 0; height: 0; border-top: 2px dashed rgba(58, 16, 70, 0.22); z-index: 1; }
 @keyframes grow { from { transform: scaleY(0); } }
@@ -445,8 +450,12 @@ a.brand { color: inherit; text-decoration: none; }
 .dial svg { width: 100%; height: 100%; transform: rotate(-90deg); }
 .dial-track { fill: none; stroke: rgba(58, 16, 70, 0.07); stroke-width: 14; }
 .dial-fill { fill: none; stroke: #C800F5; stroke-width: 14; stroke-linecap: round; transition: stroke-dashoffset 0.5s linear, stroke 0.4s; }
-.dial.running .dial-fill { filter: drop-shadow(0 0 10px rgba(200, 0, 245, 0.45)); }
-.dial.done .dial-fill { stroke: #1FA855; filter: drop-shadow(0 0 10px rgba(31, 168, 85, 0.4)); }
+.dial.drums .dial-fill { stroke: var(--drums); }
+.dial.vocals .dial-fill { stroke: var(--vocals); }
+.dial.running.drums .dial-fill { filter: drop-shadow(0 0 10px rgba(174, 243, 89, 0.8)); }
+.dial.running.vocals .dial-fill { filter: drop-shadow(0 0 10px rgba(250, 129, 40, 0.6)); }
+.dial.done .dial-fill { animation: done-pulse 1.6s ease-in-out infinite; }
+@keyframes done-pulse { 50% { stroke-width: 18; } }
 .dial-center { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; }
 .time { font: 700 clamp(48px, 15vw, 76px)/1 "Space Grotesk", sans-serif; letter-spacing: -0.02em; font-variant-numeric: tabular-nums; }
 .dial-sub { margin-top: 10px; color: var(--muted); font-size: 14px; font-weight: 500; }
@@ -495,3 +504,12 @@ a.brand { color: inherit; text-decoration: none; }
   *, *::before, *::after { animation: none !important; transition: none !important; }
   .confetti { display: none; }
 }
+
+/* Instrument colours on the Drums / Vocals buttons */
+.toggle button[data-type]::before {
+  content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
+  margin-right: 8px; vertical-align: 0; transition: box-shadow 0.25s;
+}
+.toggle button[data-type="drums"]::before { background: var(--drums); }
+.toggle button[data-type="vocals"]::before { background: var(--vocals); }
+.toggle button.on[data-type]::before { box-shadow: 0 0 0 2px #fff; }

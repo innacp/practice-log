@@ -307,7 +307,9 @@ function renderGoal() {
   const goal = settings.weeklyGoal;
   const start = weekStart();
   const startKey = iso(start), todayKey = today();
-  const byDay = minutesByDay(sessions.filter(s => s.date >= startKey && s.date <= todayKey));
+  const weekList = sessions.filter(s => s.date >= startKey && s.date <= todayKey);
+  const byDay = minutesByDay(weekList);
+  const drumsByDay = minutesByDay(weekList.filter(s => s.type === 'drums'));
   const done = Object.values(byDay).reduce((a, b) => a + b, 0);
   const pct = goal ? done / goal : 0;
 
@@ -333,11 +335,19 @@ function renderGoal() {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const key = iso(d), min = byDay[key] || 0;
     const col = el('div', 'wb' + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' future' : ''));
-    col.title = `${d.toLocaleDateString(undefined, { weekday: 'long' })}: ${min ? fmtMin(min) : 'no practice'}`;
+    const dMin = drumsByDay[key] || 0, vMin = min - dMin;
+    col.title = `${d.toLocaleDateString(undefined, { weekday: 'long' })}: ` +
+      (min ? [dMin && `drums ${fmtMin(dMin)}`, vMin && `vocals ${fmtMin(vMin)}`].filter(Boolean).join(', ') : 'no practice');
     const track = el('div', 'wb-track');
-    const bar = el('div', 'wb-bar' + (min >= daily ? ' hit' : ''));
+    // Stacked bar: drums (green) at the bottom, vocals (orange) on top
+    const bar = el('div', 'wb-bar');
     bar.style.height = (min / max * 100) + '%';
     bar.style.setProperty('--d', i * 60 + 'ms');
+    if (min) {
+      const v = el('span', 'seg vocals'); v.style.flexBasis = (vMin / min * 100) + '%';
+      const dr = el('span', 'seg drums'); dr.style.flexBasis = (dMin / min * 100) + '%';
+      bar.append(v, dr);
+    }
     const line = el('div', 'wb-line'); line.style.bottom = (daily / max * 100) + '%';
     track.append(line, bar);
     col.append(track, el('span', null, label));
