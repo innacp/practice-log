@@ -541,7 +541,7 @@ a.brand { color: inherit; text-decoration: none; }
 .l-title small { display: block; font: 500 12px Inter, sans-serif; color: var(--muted); margin-top: 2px; }
 .l-done { width: 22px; height: 22px; border-radius: 50%; border: 2px solid var(--field); flex: none; transition: background-color 0.3s, border-color 0.3s; }
 .lesson.is-done .l-done {
-  border-color: #1FA855; background: #1FA855 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%23fff' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E") no-repeat center / 14px;
+  border-color: #AEF359; background: #AEF359 url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='%232C4A05' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M3.5 8.5l3 3 6-7'/%3E%3C/svg%3E") no-repeat center / 14px;
 }
 .l-body { padding: 0 20px 20px 68px; line-height: 1.65; animation: rise 0.45s var(--ease) both; }
 .l-body p { margin: 0 0 12px; }
@@ -555,7 +555,7 @@ a.brand { color: inherit; text-decoration: none; }
 .try .demo-row { margin-bottom: 0; }
 .primary.playing { background: var(--ink); }
 .mark-done { margin-top: 4px; }
-.mark-done[aria-pressed="true"] { border-color: #1FA855; color: #1D6B3A; background: #E6F6EC; }
+.mark-done[aria-pressed="true"] { border-color: #AEF359; color: #3F6B0A; background: #F0FDE0; }
 
 .table-wrap { overflow-x: auto; margin-bottom: 12px; }
 .l-body table { width: 100%; border-collapse: collapse; font-size: 14px; min-width: 420px; }
@@ -639,20 +639,20 @@ html[lang="uk"] [data-l="en"], html[lang="en"] [data-l="uk"] { display: none !im
   width: 44px; height: 44px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center;
   font: 700 20px "Space Grotesk", sans-serif; color: #fff;
 }
-.lv-beginner .level-badge, .lesson.lv-beginner .l-num { background: #2FB36B; color: #fff; }
-.lv-intermediate .level-badge, .lesson.lv-intermediate .l-num { background: #F08A24; color: #fff; }
+.lv-beginner .level-badge, .lesson.lv-beginner .l-num { background: var(--drums); color: #2C4A05; }
+.lv-intermediate .level-badge, .lesson.lv-intermediate .l-num { background: var(--vocals); color: #fff; }
 .lv-advanced .level-badge, .lesson.lv-advanced .l-num { background: #C800F5; color: #fff; }
 .level-prog { display: flex; align-items: center; gap: 8px; flex: 0 1 200px; }
 .level-prog .lp-bar { height: 8px; }
 .level-prog .muted { margin: 0; font-size: 13px; font-weight: 600; }
-.lv-beginner .lp-bar span { background: #2FB36B; }
-.lv-intermediate .lp-bar span { background: #F08A24; }
+.lv-beginner .lp-bar span { background: var(--drums); }
+.lv-intermediate .lp-bar span { background: var(--vocals); }
 
 .l-body h3 { margin: 18px 0 6px; font-size: 16px; }
 .l-body h3:first-child { margin-top: 0; }
 .formula { font: 700 20px "Space Grotesk", sans-serif; letter-spacing: 0.06em; text-align: center; padding: 10px; border-radius: 12px; background: rgba(58, 16, 70, 0.04); }
 .formula b { color: #C800F5; }
-.key-idea { padding: 12px 14px; border-radius: 12px; background: rgba(47, 179, 107, 0.09); border: 1px solid rgba(47, 179, 107, 0.25); margin: 0 0 12px; }
+.key-idea { padding: 12px 14px; border-radius: 12px; background: #F0FDE0; border: 1px solid rgba(174, 243, 89, 0.9); margin: 0 0 12px; }
 .note { font-size: 14px; color: var(--muted); padding-left: 12px; border-left: 3px solid var(--line); }
 .staff { width: 100%; max-width: 420px; height: auto; display: block; margin: 4px 0 12px; color: var(--ink); }
 .quiz { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(200, 0, 245, 0.4); }
