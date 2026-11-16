@@ -425,12 +425,12 @@ a.brand { color: inherit; text-decoration: none; }
 .split { margin-top: 16px; }
 .split-bar { display: flex; height: 10px; border-radius: 999px; overflow: hidden; background: rgba(58, 16, 70, 0.06); }
 .split-bar span { transition: width 0.8s var(--ease); }
-.split-drums { background: var(--drums); }
-.split-vocals { background: var(--vocals); }
+.split-drums { background: #22D35E; }
+.split-vocals { background: #FF8A00; }
 .split-legend { display: flex; justify-content: space-between; gap: 8px; flex-wrap: wrap; margin-top: 6px; font-size: 12px; color: var(--muted); }
 .split-legend .k::before { content: ""; display: inline-block; width: 8px; height: 8px; border-radius: 50%; margin-right: 6px; vertical-align: 1px; }
-.split-legend .drums::before { background: var(--drums); }
-.split-legend .vocals::before { background: var(--vocals); }
+.split-legend .drums::before { background: #22D35E; }
+.split-legend .vocals::before { background: #FF8A00; }
 .mini-cal { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 4px; margin-top: 16px; }
 .mc-head { text-align: center; font-size: 11px; font-weight: 600; color: var(--muted); padding-bottom: 2px; }
 .mc-day { height: 28px; display: flex; align-items: center; justify-content: center; border-radius: 8px; font-size: 12px; color: var(--muted); background: rgba(58, 16, 70, 0.04); }
