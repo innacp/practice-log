@@ -50,28 +50,29 @@
       <p class="error" id="unlock-error" role="alert" hidden></p>
     </form>
 
-    <section class="hero">
-      <div class="streak-card">
-        <div class="streak-top">
-          <div>
-            <p class="eyebrow" data-i18n="streak.title">Current streak</p>
-            <p class="streak"><span id="streak">0</span><span class="unit"> days</span></p>
-          </div>
-          <div class="fire" aria-hidden="true">
-            <div class="glow"></div>
-            <div class="flame outer"></div>
-            <div class="flame mid"></div>
-            <div class="flame inner"></div>
-            <span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span>
-          </div>
+    <!-- Summary strip: streak with its fire, then three quiet numbers -->
+    <section class="card streak-card">
+      <div class="streak-main">
+        <div class="fire" aria-hidden="true">
+          <div class="glow"></div>
+          <div class="flame outer"></div>
+          <div class="flame mid"></div>
+          <div class="flame inner"></div>
+          <span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span>
         </div>
-        <div class="streak-stats">
-          <div><b id="longest">0</b><span data-i18n="stat.longest">longest streak</span></div>
-          <div><b id="week">0</b><span data-i18n="stat.week">min this week</span></div>
-          <div><b id="hours">0</b><span data-i18n="stat.hours">hours total</span></div>
+        <div>
+          <p class="eyebrow" data-i18n="streak.title">Current streak</p>
+          <p class="streak"><span id="streak">0</span><span class="unit"> days</span></p>
         </div>
       </div>
+      <div class="streak-stats">
+        <div><b id="longest">0</b><span data-i18n="stat.longest">longest streak</span></div>
+        <div><b id="week">0</b><span data-i18n="stat.week">min this week</span></div>
+        <div><b id="hours">0</b><span data-i18n="stat.hours">hours total</span></div>
+      </div>
+    </section>
 
+    <section class="hero">
       <form class="card log" id="log-form">
         <h2 data-i18n="log.title">Log a session</h2>
         <div class="toggle" role="group" data-i18n-aria="instrument" aria-label="Instrument">
@@ -92,9 +93,7 @@
         <label><span data-i18n="log.notes">What did you work on?</span> <input type="text" name="notes" placeholder="e.g. paradiddles at 90 bpm" data-i18n-ph="log.ph"></label>
         <button type="submit" class="primary" data-i18n="log.add">Add session</button>
       </form>
-    </section>
 
-    <section class="duo">
       <div class="card goal">
         <div class="row">
           <div>
@@ -130,21 +129,9 @@
         </div>
         <div class="split-legend goal-legend"><span class="k drums" data-i18n="drums">Drums</span><span class="k vocals" data-i18n="vocals">Vocals</span><span class="k target" data-i18n="goal.daily">Daily target</span></div>
       </div>
-
-      <div class="card recap">
-        <div class="row">
-          <h2 data-i18n="recap.title">Monthly recap</h2>
-          <div class="month-nav">
-            <button type="button" class="icon-btn" id="recap-prev" data-i18n-aria="recap.prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
-            <span id="recap-month"></span>
-            <button type="button" class="icon-btn" id="recap-next" data-i18n-aria="recap.next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-          </div>
-        </div>
-        <div id="recap-body"></div>
-      </div>
     </section>
 
-    <section class="card">
+    <section class="card" id="year-card">
       <div class="row">
         <div>
           <h2 data-i18n="year.title">The last year</h2>
@@ -159,6 +146,18 @@
       </div>
       <div class="graph-scroll"><div id="graph"></div></div>
       <div class="legend" id="legend"></div>
+    </section>
+
+    <section class="card recap">
+        <div class="row">
+          <h2 data-i18n="recap.title">Monthly recap</h2>
+          <div class="month-nav">
+            <button type="button" class="icon-btn" id="recap-prev" data-i18n-aria="recap.prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
+            <span id="recap-month"></span>
+            <button type="button" class="icon-btn" id="recap-next" data-i18n-aria="recap.next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
+          </div>
+        </div>
+        <div id="recap-body"></div>
     </section>
 
     <section class="card">

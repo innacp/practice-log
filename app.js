@@ -453,22 +453,6 @@ function renderRecap() {
   split.append(bar, legend);
   body.appendChild(split);
 
-  // Mini calendar
-  const cal = el('div', 'mini-cal');
-  t('weekLetters').forEach(d => cal.appendChild(el('span', 'mc-head', d)));
-  const offset = (m.getDay() + 6) % 7;
-  for (let i = 0; i < offset; i++) cal.appendChild(el('span', 'mc-blank'));
-  const days = new Date(m.getFullYear(), m.getMonth() + 1, 0).getDate();
-  for (let d = 1; d <= days; d++) {
-    const key = `${m.getFullYear()}-${pad(m.getMonth() + 1)}-${pad(d)}`;
-    const min = byDay[key] || 0;
-    const c = el('span', 'mc-day' + (min ? ' has' : '') + (key === today() ? ' is-today' : ''), String(d));
-    c.style.background = min ? SCALES.all[level(min)] : '';
-    if (level(min) >= 3) c.style.color = '#fff';
-    c.title = min ? `${d} ${monthShort(m.getMonth())}: ${fmtMin(min)}` : `${d} ${monthShort(m.getMonth())}`;
-    cal.appendChild(c);
-  }
-  body.appendChild(cal);
 }
 
 document.getElementById('recap-prev').onclick = () => { recapMonth.setMonth(recapMonth.getMonth() - 1); renderRecap(); };

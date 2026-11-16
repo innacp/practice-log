@@ -721,3 +721,76 @@ html[lang="uk"] [data-l="en"], html[lang="en"] [data-l="uk"] { display: none !im
   .level-prog { flex-basis: 100%; }
   .cof { grid-template-columns: repeat(4, minmax(0, 1fr)); }
 }
+
+/* =========================================================
+   Calm, cohesive log page (overrides the earlier, busier styles)
+   ========================================================= */
+/* Quieter background: one soft, still tint instead of moving glows */
+body::before, body::after { animation: none; opacity: 0.18; }
+
+/* Cards: solid white, hairline border, one soft shadow, no hover lift */
+.card {
+  background: #fff; backdrop-filter: none; -webkit-backdrop-filter: none;
+  border: 1px solid rgba(58, 16, 70, 0.08);
+  box-shadow: 0 1px 2px rgba(58, 16, 70, 0.04), 0 10px 28px -18px rgba(58, 16, 70, 0.18);
+}
+.card:hover { box-shadow: 0 1px 2px rgba(58, 16, 70, 0.04), 0 10px 28px -18px rgba(58, 16, 70, 0.18); }
+main.wrap { gap: 20px; }
+.row, .duo .row { margin-bottom: 16px; }
+h2 { font-size: 19px; }
+
+/* Summary strip */
+.streak-card {
+  display: flex; flex-direction: row; align-items: center; justify-content: flex-start; gap: 24px; flex-wrap: wrap; padding: 18px 24px;
+  background: linear-gradient(90deg, rgba(209, 0, 255, 0.08), rgba(209, 0, 255, 0.02) 60%), #fff;
+  border: 1px solid rgba(209, 0, 255, 0.16); color: var(--ink);
+}
+.streak-main { display: flex; align-items: center; gap: 4px; flex: 0 0 auto; }
+.streak-card .fire { zoom: 0.55; margin: -10px -6px 0 -14px; }
+.streak-card .eyebrow { font-size: 12px; color: var(--muted); }
+.streak { margin: 2px 0 0; font-size: 52px; }
+.streak .unit { font-size: 18px; color: var(--muted); }
+.streak-stats {
+  flex: 1 1 360px; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 0;
+  border-top: 0; padding-top: 0;
+}
+.streak-stats div { padding: 4px 20px; border-left: 1px solid rgba(58, 16, 70, 0.1); }
+.streak-stats b { font: 700 26px/1.1 "Space Grotesk", sans-serif; }
+.streak-stats span { font-size: 13px; color: var(--muted); }
+.streak-stats div:hover { transform: none; }
+
+/* Log + weekly goal side by side, same height */
+.hero { grid-template-columns: repeat(auto-fit, minmax(340px, 1fr)); gap: 20px; align-items: stretch; }
+.hero > .card { animation-delay: 0s; }
+.goal { display: flex; flex-direction: column; }
+.goal .row { margin-bottom: 8px; }
+.goal-body { flex: 1; align-items: center; justify-content: space-between; }
+.goal-legend { margin-top: 10px; }
+.ring { width: 140px; height: 140px; }
+.ring-center b { font-size: 26px; }
+
+/* Monthly recap: one calm row of numbers + the split bar */
+.recap .row { margin-bottom: 14px; }
+.recap-stats { grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 12px; }
+.rs { background: rgba(58, 16, 70, 0.035); }
+.rs b { font-size: 20px; }
+.recap-change { margin-top: 10px; }
+.split { margin-top: 14px; }
+
+/* Year graph legend sits closer */
+.legend { margin-top: 12px; }
+
+@media (max-width: 700px) {
+  .streak-card { gap: 12px; padding: 16px; }
+  .streak-stats { flex-basis: 100%; }
+  .streak-stats div { padding: 4px 12px; }
+  .streak-stats div:first-child { border-left: 0; padding-left: 0; }
+  .streak-stats b { font-size: 22px; }
+  .recap-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+
+/* Year graph fills the card width; scrolls only on narrow screens */
+#graph { width: 100%; min-width: 760px; }
+.months { grid-template-columns: 64px repeat(53, minmax(10px, 1fr)); }
+.graph-row .cells { flex: 1; grid-template-rows: repeat(7, auto); grid-auto-columns: minmax(10px, 1fr); }
+.graph-row .cell { width: 100%; height: auto; aspect-ratio: 1; }
