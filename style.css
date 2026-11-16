@@ -800,3 +800,7 @@ h2 { font-size: 19px; }
 .legend { margin-top: 10px; }
 .legend .cell { width: 11px; height: 11px; }
 #year-card .row { margin-bottom: 12px; }
+
+/* Cleaner header: no date, and the status badge only appears when something went wrong */
+#today { display: none !important; }
+#sync:not(.err) { display: none !important; }
