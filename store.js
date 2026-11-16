@@ -63,7 +63,7 @@ function weekStart(d = new Date()) {
 function confetti(fromEl) {
   if (reducedMotion() || !fromEl) return;
   const r = fromEl.getBoundingClientRect();
-  const colors = ['#D100FF', '#A13BFF', '#FF6EC7', '#EA6A1F', '#4C6EF5', '#FFD43B'];
+  const colors = ['#D100FF', '#A13BFF', '#FF6EC7', '#22D35E', '#FF8A00', '#FFD43B'];
   for (let i = 0; i < 36; i++) {
     const p = el('span', 'confetti');
     p.style.background = colors[i % colors.length];

@@ -106,8 +106,8 @@ document.getElementById('lock').onclick = () => {
 };
 
 const SCALES = {
-  drums:  ['#EEF0F3', '#FFD8B8', '#FDA770', '#EA6A1F', '#B8430C'],
-  vocals: ['#EEF0F3', '#CDD7FF', '#91A7FF', '#4C6EF5', '#2F44B3'],
+  drums:  ['#EEF0F3', '#B7F5C9', '#6BE38F', '#22D35E', '#14963F'],
+  vocals: ['#EEF0F3', '#FFE0B3', '#FFBE66', '#FF8A00', '#C96A00'],
   all:    ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'],
 };
 const DOTS = { drums: 'var(--drums)', vocals: 'var(--vocals)', all: '#CC3FEB' };
