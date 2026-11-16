@@ -205,9 +205,9 @@ function renderGraph() {
   for (const type of types) {
     const byDay = minutesByDay(visible());
     const row = el('div', 'graph-row');
+    // Weekday labels down the left, like GitHub: Mon, Wed, Fri
     const label = el('div', 'graph-label');
-    const dot = el('span', 'dot'); dot.style.background = DOTS[type];
-    label.append(dot, typeName(type));
+    t('weekShort').forEach((w, r) => label.appendChild(el('span', null, r % 2 ? w : '')));
     const cells = el('div', 'cells');
     let i = 0;
     for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1), i++) {
@@ -226,7 +226,7 @@ function renderGraph() {
     graph.appendChild(row);
   }
   // On narrow screens, start scrolled to the most recent weeks
-  const scroller = graph.parentElement;
+  const scroller = graph.closest('.graph-scroll');
   scroller.scrollLeft = scroller.scrollWidth;
 
   document.getElementById('year-summary').textContent =
