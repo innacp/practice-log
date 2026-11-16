@@ -236,18 +236,17 @@ main > *:nth-child(4) { animation-delay: 0.25s; }
 }
 .fire .outer {
   width: 70px; height: 70px; margin-left: -35px;
-  background: linear-gradient(-45deg, #FF2E88 10%, #FF5A3C 45%, #FF9A1F 90%);
-  box-shadow: 0 0 28px rgba(255, 70, 120, 0.45);
+  background: linear-gradient(45deg, #FF9A1F 15%, rgba(255, 90, 60, 0.75) 55%, rgba(255, 46, 136, 0) 92%);
   animation: flick-a 1.3s ease-in-out infinite;
 }
 .fire .mid {
   width: 50px; height: 50px; margin-left: -25px; bottom: 12px;
-  background: linear-gradient(-45deg, #FF6A1F 10%, #FFB020 80%);
+  background: linear-gradient(45deg, #FFB020 15%, rgba(255, 106, 31, 0.7) 55%, rgba(255, 106, 31, 0) 92%);
   animation: flick-b 1s ease-in-out infinite;
 }
 .fire .inner {
   width: 28px; height: 28px; margin-left: -14px; bottom: 12px;
-  background: linear-gradient(-45deg, #FFD43B, #FFF6C8);
+  background: linear-gradient(45deg, #FFF6C8 15%, rgba(255, 212, 59, 0.6) 55%, rgba(255, 212, 59, 0) 92%);
   animation: flick-c 0.8s ease-in-out infinite;
 }
 @keyframes flick-a {
@@ -505,14 +504,6 @@ a.brand { color: inherit; text-decoration: none; }
   .confetti { display: none; }
 }
 
-/* Instrument colours on the Drums / Vocals buttons */
-.toggle button[data-type]::before {
-  content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%;
-  margin-right: 8px; vertical-align: 0; transition: box-shadow 0.25s;
-}
-.toggle button[data-type="drums"]::before { background: var(--drums); }
-.toggle button[data-type="vocals"]::before { background: var(--vocals); }
-.toggle button.on[data-type]::before { box-shadow: 0 0 0 2px #fff; }
 
 /* =========================================================
    Theory page
