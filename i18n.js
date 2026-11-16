@@ -5,9 +5,10 @@ const LANG_KEY = 'practice-log-lang';
 
 const I18N = {
   en: {
-    'title.log': 'Practice Log',
-    'title.timer': 'Timer · Practice Log',
-    'title.theory': 'Theory · Practice Log',
+    'brand': 'Muza',
+    'title.log': 'Muza',
+    'title.timer': 'Timer · Muza',
+    'title.theory': 'Theory · Muza',
     'nav.pages': 'Pages', 'nav.log': 'Log', 'nav.timer': 'Timer', 'nav.theory': 'Theory',
     'lang.label': 'Language',
     'drums': 'Drums', 'vocals': 'Vocals', 'all': 'All',
@@ -64,7 +65,7 @@ const I18N = {
     'sessions.empty': 'No sessions yet. Log your first one above.',
     'sessions.del': 'Delete session', 'sessions.confirm': 'Delete this session?',
     'import.ok': 'Imported {n} session(s).',
-    'import.bad': 'That file doesn’t look like a Practice Log export.',
+    'import.bad': 'That file doesn’t look like a Muza export.',
 
     // Timer page
     'timer.ready': 'Ready when you are', 'timer.practising': 'Practising…', 'timer.paused': 'Paused',
@@ -100,9 +101,10 @@ const I18N = {
   },
 
   uk: {
-    'title.log': 'Журнал практики',
-    'title.timer': 'Таймер · Журнал практики',
-    'title.theory': 'Теорія · Журнал практики',
+    'brand': 'Муза',
+    'title.log': 'Муза',
+    'title.timer': 'Таймер · Муза',
+    'title.theory': 'Теорія · Муза',
     'nav.pages': 'Сторінки', 'nav.log': 'Журнал', 'nav.timer': 'Таймер', 'nav.theory': 'Теорія',
     'lang.label': 'Мова',
     'drums': 'Барабани', 'vocals': 'Вокал', 'all': 'Усе',
@@ -158,7 +160,7 @@ const I18N = {
     'sessions.empty': 'Ще немає занять. Запишіть перше вище.',
     'sessions.del': 'Видалити заняття', 'sessions.confirm': 'Видалити це заняття?',
     'import.ok': 'Імпортовано занять: {n}.',
-    'import.bad': 'Цей файл не схожий на експорт із Practice Log.',
+    'import.bad': 'Цей файл не схожий на експорт із Muza.',
 
     'timer.ready': 'Готово до старту', 'timer.practising': 'Займаємось…', 'timer.paused': 'Пауза',
     'timer.finished': 'Завершено', 'timer.toGo': 'Залишилось {t}', 'timer.reached': 'Ціль досягнуто. Продовжуйте!',

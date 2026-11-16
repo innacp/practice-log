@@ -1,4 +1,4 @@
-// Practice Log — sessions are saved online (Vercel + Redis, behind a passcode)
+// Muza — sessions are saved online (Vercel + Redis, behind a passcode)
 // and cached in this browser's localStorage. Without the online database it
 // falls back to this browser only. Shared helpers live in store.js.
 let sessions = loadSessions();
@@ -547,7 +547,7 @@ document.getElementById('export').onclick = () => {
   const blob = new Blob([JSON.stringify(sessions, null, 2)], { type: 'application/json' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
-  a.download = `practice-log-${today()}.json`;
+  a.download = `muza-${today()}.json`;
   a.click();
   URL.revokeObjectURL(a.href);
 };

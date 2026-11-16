@@ -1,4 +1,6 @@
-# Practice Log
+# Muza
+
+A practice tracker for drums and vocals (formerly "Practice Log").
 
 A GitHub-style contribution graph for drums and vocals practice.
 
