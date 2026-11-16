@@ -635,3 +635,89 @@ html[lang="uk"] [data-l="en"], html[lang="en"] [data-l="uk"] { display: none !im
   .top-right { margin-left: 0; }
 }
 @media (max-width: 960px) { #today { display: none; } }
+
+/* =========================================================
+   Theory v2: levels + interactive piano
+   ========================================================= */
+.level-head { display: flex; align-items: center; gap: 14px; flex-wrap: wrap; margin: 18px 0 2px; padding: 4px 4px 0; }
+.level-head:first-child { margin-top: 4px; }
+.level-head h2 { font-size: 22px; }
+.level-head p { margin: 2px 0 0; }
+.level-text { flex: 1 1 260px; }
+.level-badge {
+  width: 44px; height: 44px; border-radius: 14px; flex: none; display: flex; align-items: center; justify-content: center;
+  font: 700 20px "Space Grotesk", sans-serif; color: #fff;
+}
+.lv-beginner .level-badge, .lesson.lv-beginner .l-num { background: #2FB36B; color: #fff; }
+.lv-intermediate .level-badge, .lesson.lv-intermediate .l-num { background: #F08A24; color: #fff; }
+.lv-advanced .level-badge, .lesson.lv-advanced .l-num { background: #C800F5; color: #fff; }
+.level-prog { display: flex; align-items: center; gap: 8px; flex: 0 1 200px; }
+.level-prog .lp-bar { height: 8px; }
+.level-prog .muted { margin: 0; font-size: 13px; font-weight: 600; }
+.lv-beginner .lp-bar span { background: #2FB36B; }
+.lv-intermediate .lp-bar span { background: #F08A24; }
+
+.l-body h3 { margin: 18px 0 6px; font-size: 16px; }
+.l-body h3:first-child { margin-top: 0; }
+.formula { font: 700 20px "Space Grotesk", sans-serif; letter-spacing: 0.06em; text-align: center; padding: 10px; border-radius: 12px; background: rgba(58, 16, 70, 0.04); }
+.formula b { color: #C800F5; }
+.key-idea { padding: 12px 14px; border-radius: 12px; background: rgba(47, 179, 107, 0.09); border: 1px solid rgba(47, 179, 107, 0.25); margin: 0 0 12px; }
+.note { font-size: 14px; color: var(--muted); padding-left: 12px; border-left: 3px solid var(--line); }
+.staff { width: 100%; max-width: 420px; height: auto; display: block; margin: 4px 0 12px; color: var(--ink); }
+.quiz { margin: 0 0 12px; padding: 10px 14px; border-radius: 12px; border: 1px dashed rgba(200, 0, 245, 0.4); }
+.quiz summary { cursor: pointer; font-weight: 600; color: #9C00C0; }
+.quiz[open] summary { margin-bottom: 8px; }
+.cof { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: 6px; margin: 0 0 12px; max-width: 520px; }
+.cof span { display: flex; flex-direction: column; align-items: center; padding: 8px 4px; border-radius: 10px; background: rgba(58, 16, 70, 0.04); font-size: 12px; color: var(--muted); }
+.cof b { font: 700 16px "Space Grotesk", sans-serif; color: var(--ink); }
+
+/* Piano widget */
+.pw { margin: 4px 0 16px; }
+.kb-scroll { overflow-x: auto; padding-bottom: 4px; }
+.kb {
+  --bw: min(4.2%, 22px);
+  position: relative; display: grid; grid-template-columns: repeat(var(--whites), minmax(26px, 1fr));
+  height: 150px; min-width: calc(var(--whites) * 26px); max-width: calc(var(--whites) * 52px);
+  user-select: none; -webkit-user-select: none;
+}
+.key { border: 0; padding: 0; cursor: pointer; font: inherit; transition: background-color 0.12s, transform 0.08s, box-shadow 0.12s; }
+.key.white {
+  position: relative; height: 100%; background: #fff; border: 1px solid #D9D3E0; border-radius: 0 0 8px 8px; margin-right: -1px;
+  display: flex; flex-direction: column; justify-content: flex-end; align-items: center; padding-bottom: 6px;
+  box-shadow: inset 0 -4px 0 rgba(58, 16, 70, 0.08);
+}
+.key.black {
+  position: absolute; top: 0; width: var(--bw); height: 60%; z-index: 2;
+  background: linear-gradient(#2A2730, #16181D); border-radius: 0 0 5px 5px; box-shadow: 0 3px 4px rgba(0, 0, 0, 0.3);
+}
+.kname { font-size: 10px; font-weight: 600; color: #9A93A6; }
+.kname.c { color: var(--ink); font-weight: 700; }
+.klabel {
+  position: absolute; bottom: 24px; left: 50%; transform: translateX(-50%);
+  font-size: 10px; font-weight: 700; color: #7A00A0; white-space: nowrap;
+}
+.key.black .klabel { bottom: -18px; color: #7A00A0; }
+.key.white.mark { background: #F6E3FC; }
+.key.black.mark { background: linear-gradient(#A63BC4, #7A1E95); }
+.key.white.on, .key.white:active { background: #D78BF0; transform: translateY(2px); box-shadow: inset 0 -1px 0 rgba(58, 16, 70, 0.1); }
+.key.black.on, .key.black:active { background: #C800F5; transform: translateY(2px); }
+.key.white.on .kname, .key.white.on .klabel { color: #3A1046; }
+.pw-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-top: 10px; }
+.pw-cap { font-size: 13px; color: var(--muted); }
+.pw-play { min-width: 110px; }
+
+/* Metronome dots */
+.metro { margin: 4px 0 14px; }
+.metro-dots { display: flex; gap: 8px; margin-bottom: 10px; }
+.metro-dots span {
+  width: 36px; height: 36px; border-radius: 50%; display: flex; align-items: center; justify-content: center;
+  font-weight: 700; color: var(--muted); background: rgba(58, 16, 70, 0.06); transition: background-color 0.08s, transform 0.08s, color 0.08s;
+}
+.metro-dots span.on { background: #C800F5; color: #fff; transform: scale(1.12); }
+.metro-dots span:first-child.on { background: #7A00A0; }
+
+@media (max-width: 600px) {
+  .kb { height: 130px; }
+  .level-prog { flex-basis: 100%; }
+  .cof { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+}
