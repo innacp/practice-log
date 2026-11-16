@@ -3,7 +3,7 @@
   --line: #E4E5E9; --field: #D3D5DB; --soft: #F1F2F4;
   --accent: rgba(209, 0, 255, 0.85);
   --streak-bg: rgba(209, 0, 255, 0.5); --plum: #3A1046;
-  --drums: #66FF00; --vocals: #E56717;
+  --drums: #AEF359; --vocals: #FA8128;
 }
 
 * { box-sizing: border-box; }
@@ -90,8 +90,8 @@ main.wrap { padding-top: 32px; padding-bottom: 64px; display: flex; flex-directi
 #sessions li.empty { display: block; color: var(--muted); }
 .s-date { color: var(--muted); font-size: 14px; }
 .tag { justify-self: start; font-size: 12px; font-weight: 600; padding: 2px 10px; border-radius: 999px; }
-.tag.drums { background: #E6FFD1; color: #2F6B00; }
-.tag.vocals { background: #FCE6D7; color: #9A420B; }
+.tag.drums { background: #F0FDE0; color: #3F6B0A; }
+.tag.vocals { background: #FFEBDC; color: #A3470A; }
 .s-min { font-weight: 600; }
 .s-notes { color: var(--muted); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .del { width: 44px; height: 44px; border: 0; background: transparent; color: var(--muted); cursor: pointer; display: flex; align-items: center; justify-content: center; border-radius: 8px; }
