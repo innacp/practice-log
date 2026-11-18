@@ -23,7 +23,7 @@ function streaks() {
 function render() {
   if (!profile) return;
   document.title = `${profile.name} · ${t('brand')}`;
-  $('u-avatar').textContent = profile.name.charAt(0).toUpperCase();
+  paintAvatar($('u-avatar'), profile);
   $('u-name').textContent = profile.name;
   $('u-admin').hidden = profile.role !== 'admin';
   $('u-handle').textContent = '@' + profile.username;

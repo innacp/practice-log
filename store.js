@@ -121,6 +121,22 @@ async function logOut() {
   location.href = '/';
 }
 
+// Round avatar: the profile photo if there is one, otherwise the first letter of the name
+function paintAvatar(node, person) {
+  node.innerHTML = '';
+  if (person && person.avatar && person.username) {
+    const img = el('img');
+    img.alt = '';
+    img.src = '/api/profile?u=' + encodeURIComponent(person.username) + '&avatar=' + person.avatar;
+    img.onerror = () => { node.textContent = (person.name || '?').trim().charAt(0).toUpperCase(); };
+    node.appendChild(img);
+    node.classList.add('has-photo');
+  } else {
+    node.textContent = ((person && (person.name || person.email)) || '?').trim().charAt(0).toUpperCase();
+    node.classList.remove('has-photo');
+  }
+}
+
 // Header: "Log in" button, or a round avatar with the first letter linking to the profile.
 // The admin gear only shows for the admin account.
 function renderAccountButton() {
@@ -131,11 +147,12 @@ function renderAccountButton() {
     b.classList.toggle('signed-in', !!user);
     if (user) {
       b.href = '/profile';
-      b.textContent = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
+      paintAvatar(b, user);
       b.title = user.name;
       b.setAttribute('aria-label', t('auth.myProfile') + ': ' + user.name);
     } else {
       b.href = '/login?next=' + encodeURIComponent(location.pathname);
+      b.classList.remove('has-photo');
       b.textContent = t('auth.login');
       b.title = '';
       b.removeAttribute('aria-label');

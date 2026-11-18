@@ -3,7 +3,9 @@
 //   PATCH  /api/me                      { name?, username?, bio?, public? }
 //   POST   /api/me?action=password      { current, password }
 //   DELETE /api/me                      { password }   deletes the account and all its data
-import { redis, readBody, begin, publicUser, loadUser, hashPassword, checkPassword, endSession } from './_lib.js';
+//   PUT    /api/me?action=avatar        { image: "data:image/webp;base64,..." }  set profile photo
+//   DELETE /api/me?action=avatar        remove profile photo
+import { redis, readBody, begin, publicUser, loadUser, hashPassword, checkPassword, endSession, parseImage, limited } from './_lib.js';
 
 const RESERVED = new Set(['admin', 'login', 'profile', 'api', 'timer', 'theory', 'u', 'me', 'muza', 'settings']);
 
@@ -46,11 +48,27 @@ export default async function handler(req, res) {
       return res.status(200).json({ ok: true });
     }
 
+    if (req.query.action === 'avatar') {
+      if (req.method === 'PUT') {
+        if (await limited('avatar:' + me.id, 20, 3600)) return res.status(429).json({ error: 'too-many-tries' });
+        const img = parseImage((readBody(req) || {}).image);
+        if (img.error) return res.status(400).json({ error: img.error });
+        await redis('SET', 'avatar:' + me.id, img.type + ';' + img.base64);
+        await redis('HSET', 'user:' + me.id, 'avatar', String(Date.now()));
+        return res.status(200).json({ user: publicUser(await loadUser(me.id)) });
+      }
+      if (req.method === 'DELETE') {
+        await redis('DEL', 'avatar:' + me.id);
+        await redis('HSET', 'user:' + me.id, 'avatar', '0');
+        return res.status(200).json({ user: publicUser(await loadUser(me.id)) });
+      }
+    }
+
     if (req.method === 'DELETE') {
       const b = readBody(req) || {};
       if (!(await checkPassword(String(b.password || ''), me.pass))) return res.status(403).json({ error: 'wrong-password' });
       if (me.role === 'admin') return res.status(400).json({ error: 'admin-cannot-delete' });
-      await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'email:' + me.email, 'uname:' + me.username);
+      await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'avatar:' + me.id, 'email:' + me.email, 'uname:' + me.username);
       await endSession(req, res);
       return res.status(200).json({ deleted: true });
     }

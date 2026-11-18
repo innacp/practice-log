@@ -1,4 +1,5 @@
 // Public profile: GET /api/profile?u=<username>
+// Profile photo:  GET /api/profile?u=<username>&avatar=<version>  (the image itself, cached)
 // Returns the name, bio, join date and minutes practised per day, per instrument.
 // Notes are never shared. Private profiles are only visible to their owner.
 import { redis, begin, loadUser } from './_lib.js';
@@ -17,6 +18,16 @@ export default async function handler(req, res) {
     const own = viewer.id === user.id;
     if (user.public === '0' && !own) return res.status(403).json({ error: 'private' });
 
+    if (req.query.avatar !== undefined) {
+      const stored = await redis('GET', 'avatar:' + user.id);
+      if (!stored) return res.status(404).json({ error: 'no-avatar' });
+      const [type, base64] = stored.split(';');
+      // The URL carries the photo's version, so browsers may keep it for a long time
+      res.setHeader('Cache-Control', user.public === '0' ? 'private, max-age=31536000, immutable' : 'public, max-age=31536000, immutable');
+      res.setHeader('Content-Type', type);
+      return res.status(200).send(Buffer.from(base64, 'base64'));
+    }
+
     // minutes per day, split by instrument
     const flat = (await redis('HGETALL', 'sessions:' + user.id)) || [];
     const days = {};
@@ -32,7 +43,7 @@ export default async function handler(req, res) {
       instruments,
       profile: {
         name: user.name, username: user.username, bio: user.bio || '',
-        created: Number(user.created) || 0, public: user.public !== '0', own,
+        created: Number(user.created) || 0, public: user.public !== '0', own, avatar: Number(user.avatar) || 0,
         role: user.role === 'admin' ? 'admin' : 'user',
       },
       days,

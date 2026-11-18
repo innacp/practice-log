@@ -101,6 +101,7 @@ export function publicUser(u) {
   return {
     id: u.id, email: u.email, name: u.name, username: u.username, bio: u.bio || '',
     public: u.public !== '0', role: u.role || 'user', created: Number(u.created) || 0,
+    avatar: Number(u.avatar) || 0, // version of the profile photo, 0 = none
   };
 }
 
@@ -112,6 +113,19 @@ export async function begin(req, res, { needUser = false } = {}) {
   const user = await currentUser(req);
   if (needUser && !user) { res.status(401).json({ error: 'not-signed-in' }); return null; }
   return user || {};
+}
+
+// Profile photos: a small square image the browser already resized.
+// Stored as "image/webp;base64,...." under avatar:<id>; at most ~150 KB.
+const IMAGE_TYPES = { 'image/webp': [0x52, 0x49, 0x46, 0x46], 'image/jpeg': [0xff, 0xd8, 0xff], 'image/png': [0x89, 0x50, 0x4e, 0x47] };
+export function parseImage(dataUrl) {
+  const m = /^data:(image\/(?:webp|jpeg|png));base64,([A-Za-z0-9+/=]+)$/.exec(String(dataUrl || ''));
+  if (!m) return { error: 'bad-image' };
+  const bytes = Buffer.from(m[2], 'base64');
+  if (bytes.length > 150 * 1024) return { error: 'image-too-big' };
+  const magic = IMAGE_TYPES[m[1]];
+  if (!magic.every((b, i) => bytes[i] === b)) return { error: 'bad-image' };
+  return { type: m[1], base64: m[2] };
 }
 
 // Simple rate limit: at most `max` hits per `seconds` for this key

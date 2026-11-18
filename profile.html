@@ -37,10 +37,19 @@
 
   <main class="wrap profile-main" id="profile-main" hidden>
     <section class="card profile-head">
-      <span class="avatar avatar-lg" id="p-avatar">M</span>
+      <div class="photo-box">
+        <button type="button" class="avatar avatar-lg photo-btn" id="p-avatar" data-i18n-aria="prof.changePhoto" aria-label="Change photo">M</button>
+        <span class="photo-cam" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8h3l2-3h6l2 3h3v11H4z"/><circle cx="12" cy="13" r="3.5"/></svg></span>
+        <input type="file" id="p-photo" accept="image/*" hidden>
+      </div>
       <div class="profile-who">
         <h1><span id="p-name"></span> <span class="role-badge" id="p-admin" hidden data-i18n="prof.adminBadge">Admin</span></h1>
         <p class="muted" id="p-email"></p>
+        <div class="photo-actions">
+          <button type="button" class="link" id="p-photo-add"></button>
+          <button type="button" class="link danger" id="p-photo-remove" hidden data-i18n="prof.removePhoto">Remove photo</button>
+          <span class="muted photo-msg" id="p-photo-msg" role="status"></span>
+        </div>
       </div>
       <div class="profile-head-actions">
         <a class="ghost btn-link" id="p-view" href="#" data-i18n="prof.view">View public page</a>

@@ -13,7 +13,9 @@ function flash(form) {
   n.hidden = false; setTimeout(() => { n.hidden = true; }, 2500);
 }
 function fill() {
-  $('p-avatar').textContent = (me.name || '?').charAt(0).toUpperCase();
+  paintAvatar($('p-avatar'), me);
+  $('p-photo-add').textContent = t(me.avatar ? 'prof.changePhoto' : 'prof.addPhoto');
+  $('p-photo-remove').hidden = !me.avatar;
   $('p-name').textContent = me.name;
   $('p-email').textContent = me.email;
   $('p-admin').hidden = me.role !== 'admin';
@@ -73,9 +75,58 @@ $('f-instruments').addEventListener('submit', async e => {
   } else showError(f, r.data && r.data.error);
 });
 
+// ---------- Profile photo: crop to a square, shrink to 256 px, upload ----------
+function photoMsg(key, isError) {
+  const m = $('p-photo-msg');
+  m.textContent = key ? t(key) : '';
+  m.classList.toggle('error', !!isError);
+}
+function squareImage(file) {
+  return new Promise((resolve, reject) => {
+    const url = URL.createObjectURL(file);
+    const img = new Image();
+    img.onload = () => {
+      const side = Math.min(img.naturalWidth, img.naturalHeight);
+      const c = document.createElement('canvas');
+      c.width = c.height = 256;
+      const g = c.getContext('2d');
+      g.imageSmoothingQuality = 'high';
+      g.drawImage(img, (img.naturalWidth - side) / 2, (img.naturalHeight - side) / 2, side, side, 0, 0, 256, 256);
+      URL.revokeObjectURL(url);
+      let data = c.toDataURL('image/webp', 0.85);
+      if (!data.startsWith('data:image/webp')) data = c.toDataURL('image/jpeg', 0.85); // older Safari
+      resolve(data);
+    };
+    img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('bad-image')); };
+    img.src = url;
+  });
+}
+const pickPhoto = () => $('p-photo').click();
+$('p-avatar').onclick = pickPhoto;
+$('p-photo-add').onclick = pickPhoto;
+$('p-photo').addEventListener('change', async e => {
+  const file = e.target.files[0];
+  e.target.value = '';
+  if (!file) return;
+  if (!file.type.startsWith('image/')) { photoMsg('err.bad-image', true); return; }
+  let data;
+  try { data = await squareImage(file); } catch { photoMsg('err.bad-image', true); return; }
+  // show it straight away, then save
+  $('p-avatar').innerHTML = ''; const preview = el('img'); preview.src = data; preview.alt = ''; $('p-avatar').appendChild(preview);
+  photoMsg('prof.photoSaving');
+  const r = await api('PUT', { image: data }, '?action=avatar', '/api/me');
+  if (r.status === 200) { me = r.data.user; authState.user = me; fill(); renderAccountButton(); photoMsg('prof.saved'); setTimeout(() => photoMsg(''), 2500); }
+  else { fill(); photoMsg('err.' + ((r.data && r.data.error) || 'generic'), true); }
+});
+$('p-photo-remove').onclick = async () => {
+  const r = await api('DELETE', null, '?action=avatar', '/api/me');
+  if (r.status === 200) { me = r.data.user; authState.user = me; fill(); renderAccountButton(); photoMsg(''); }
+  else photoMsg('err.generic', true);
+};
+
 $('p-logout').onclick = logOut;
 document.addEventListener('langchange', () => {
-  if (me) renderUrl();
+  if (me) { renderUrl(); $('p-photo-add').textContent = t(me.avatar ? 'prof.changePhoto' : 'prof.addPhoto'); }
   if (readInst) { const keep = readInst(); readInst = buildInstrumentPicker($('p-inst-picker'), keep); }
 });
 
