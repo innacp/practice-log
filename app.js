@@ -210,8 +210,7 @@ function renderGraph() {
     graph.appendChild(row);
   }
   // On narrow screens, start scrolled to the most recent weeks
-  const scroller = graph.closest('.graph-scroll');
-  scroller.scrollLeft = scroller.scrollWidth;
+  fitGraph(graph);
 
   document.getElementById('year-summary').textContent =
     t('year.summary', { min: yearMin.toLocaleString(LANG), days: daysPractised.size, dayWord: plural(daysPractised.size, 'days') });

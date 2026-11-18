@@ -121,6 +121,21 @@ async function logOut() {
   location.href = '/';
 }
 
+// Year graph: pick a square size so all 53 weeks fit the card (13 px max, 8 px min;
+// below that it scrolls sideways, starting at the latest weeks).
+function fitGraph(graph) {
+  const scroller = graph.closest('.graph-scroll');
+  if (!scroller) return;
+  const avail = scroller.clientWidth - 34;                 // minus the weekday labels
+  const gap = avail < 53 * 13 ? 2 : 3;
+  const cell = Math.max(8, Math.min(13, Math.floor(avail / 53) - gap));
+  const box = graph.closest('.graph-box') || graph;
+  box.style.setProperty('--cell', cell + 'px');
+  box.style.setProperty('--gap', gap + 'px');
+  scroller.scrollLeft = scroller.scrollWidth;
+}
+window.addEventListener('resize', () => document.querySelectorAll('#graph').forEach(fitGraph));
+
 // Round avatar: the profile photo if there is one, otherwise the first letter of the name
 function paintAvatar(node, person) {
   node.innerHTML = '';

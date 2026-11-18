@@ -73,7 +73,7 @@ function render() {
   }
   row.append(label, cells);
   graph.appendChild(row);
-  const scroller = graph.closest('.graph-scroll'); scroller.scrollLeft = scroller.scrollWidth;
+  fitGraph(graph);
   $('year-summary').textContent = practised.length
     ? t('year.summary', { min: yearMin.toLocaleString(LANG), days: yearDays, dayWord: plural(yearDays, 'days') })
     : t('user.empty');
