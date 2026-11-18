@@ -54,12 +54,35 @@ $('f-delete').addEventListener('submit', async e => {
   if (r.status === 200) { clearLocalData(); location.href = '/'; } else showError(f, r.data && r.data.error);
 });
 
+// My instruments (stored with the weekly goal in the account settings)
+let readInst = null, instSettings = null;
+async function loadInstruments() {
+  const r = await api('GET', null, '', '/api/settings');
+  instSettings = r.status === 200 && r.data ? r.data.settings : loadSettings();
+  readInst = buildInstrumentPicker($('p-inst-picker'), myInstruments(instSettings));
+}
+$('f-instruments').addEventListener('submit', async e => {
+  e.preventDefault();
+  const f = e.currentTarget; f.querySelector('.error').hidden = true;
+  const chosen = readInst();
+  if (!chosen.length) { f.querySelector('.error').textContent = t('inst.needOne'); f.querySelector('.error').hidden = false; return; }
+  const r = await api('PUT', { instruments: chosen }, '', '/api/settings');
+  if (r.status === 200) {
+    saveSettingsLocal({ ...loadSettings(), instruments: chosen });
+    instSettings = r.data.settings; flash(f);
+  } else showError(f, r.data && r.data.error);
+});
+
 $('p-logout').onclick = logOut;
-document.addEventListener('langchange', () => { if (me) renderUrl(); });
+document.addEventListener('langchange', () => {
+  if (me) renderUrl();
+  if (readInst) { const keep = readInst(); readInst = buildInstrumentPicker($('p-inst-picker'), keep); }
+});
 
 authReady.then(state => {
   if (!state || !state.user) { location.href = '/login?next=/profile'; return; }
   me = state.user;
   fill();
+  loadInstruments();
   $('profile-main').hidden = false;
 });

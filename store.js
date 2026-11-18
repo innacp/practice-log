@@ -5,6 +5,68 @@ const monthShort = i => t('months')[i];
 const monthLong = i => t('monthsLong')[i];
 const DEFAULT_SETTINGS = { weeklyGoal: 180 }; // minutes
 
+// ---------------------------------------------------------------- instruments
+// Everything that is instrument-specific (buttons, colours, graph shades, tags,
+// bars) is built from this list. Keep the ids in sync with api/_instruments.js.
+const INSTRUMENTS = [
+  { id: 'drums',   color: '#AEF359', en: ['Drums', 'drums'],     uk: ['Барабани', 'барабани'] },
+  { id: 'vocals',  color: '#FA8128', en: ['Vocals', 'vocals'],   uk: ['Вокал', 'вокал'] },
+  { id: 'guitar',  color: '#38B6FF', en: ['Guitar', 'guitar'],   uk: ['Гітара', 'гітара'] },
+  { id: 'bass',    color: '#FFC93C', en: ['Bass', 'bass'],       uk: ['Бас-гітара', 'бас-гітара'] },
+  { id: 'piano',   color: '#7B61FF', en: ['Piano', 'piano'],     uk: ['Фортепіано', 'фортепіано'] },
+  { id: 'violin',  color: '#FF5C8A', en: ['Violin', 'violin'],   uk: ['Скрипка', 'скрипка'] },
+  { id: 'ukulele', color: '#22C3A6', en: ['Ukulele', 'ukulele'], uk: ['Укулеле', 'укулеле'] },
+  { id: 'other',   color: '#9AA0AC', en: ['Other', 'other'],     uk: ['Інше', 'інше'] },
+];
+const INSTR = Object.fromEntries(INSTRUMENTS.map(i => [i.id, i]));
+const DEFAULT_INSTRUMENTS = ['drums', 'vocals'];
+const instr = id => INSTR[id] || INSTR.other;
+const instrName = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][0];   // "Guitar" / "Гітара"
+const instrLower = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][1];  // "guitar" / "гітара"
+const instrColor = id => instr(id).color;
+
+// Blend two #rrggbb colours: w = share of b
+function mixHex(a, b, w) {
+  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
+  const [x, y] = [p(a), p(b)];
+  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * w).toString(16).padStart(2, '0')).join('');
+}
+const ALL_SCALE = ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'];
+// Five graph shades for an instrument: empty, light … dark
+function instrScale(id) {
+  const c = instrColor(id);
+  return ['#EEF0F3', mixHex(c, '#ffffff', 0.72), mixHex(c, '#ffffff', 0.42), c, mixHex(c, '#000000', 0.28)];
+}
+const scaleFor = type => (type === 'all' ? ALL_SCALE : instrScale(type));
+// Pale tag background with dark, readable text in the same hue
+function instrTagStyle(id) {
+  const c = instrColor(id);
+  return `background:${mixHex(c, '#ffffff', 0.8)};color:${mixHex(c, '#000000', 0.62)}`;
+}
+// The instruments this person practises (valid ids, in their order)
+function myInstruments(s) {
+  const list = (s && Array.isArray(s.instruments) ? s.instruments : DEFAULT_INSTRUMENTS).filter(id => INSTR[id]);
+  return list.length ? list : DEFAULT_INSTRUMENTS.slice();
+}
+// Checkbox chips to choose instruments; returns a function that reads the choice
+function buildInstrumentPicker(box, selected) {
+  box.innerHTML = '';
+  box.classList.add('inst-picker');
+  INSTRUMENTS.forEach(i => {
+    const label = el('label', 'inst-chip');
+    const cb = el('input');
+    cb.type = 'checkbox'; cb.value = i.id; cb.checked = selected.includes(i.id);
+    const dot = el('span', 'inst-dot'); dot.style.background = i.color;
+    label.append(cb, dot, el('span', null, instrName(i.id)));
+    box.appendChild(label);
+  });
+  // keep the order they were chosen in, new ones at the end
+  return () => {
+    const on = [...box.querySelectorAll('input:checked')].map(c => c.value);
+    return selected.filter(id => on.includes(id)).concat(on.filter(id => !selected.includes(id)));
+  };
+}
+
 function loadSessions() {
   try { return JSON.parse(localStorage.getItem(KEY)) || []; } catch { return []; }
 }

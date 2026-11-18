@@ -7,7 +7,7 @@ let state = loadTimer();
 let wakeLock = null;
 
 function loadTimer() {
-  const base = { type: 'drums', target: 0, startedAt: null, elapsed: 0, chimed: false };
+  const base = { type: myInstruments(loadSettings())[0], target: 0, startedAt: null, elapsed: 0, chimed: false };
   try { return { ...base, ...(JSON.parse(localStorage.getItem(TIMER_KEY)) || {}) }; } catch { return base; }
 }
 function saveTimer() { try { localStorage.setItem(TIMER_KEY, JSON.stringify(state)); } catch {} }
@@ -39,9 +39,9 @@ function draw() {
   fill.style.strokeDashoffset = CIRC * (1 - progress);
   $('dial').classList.toggle('done', !!targetMs && ms >= targetMs);
   $('dial').classList.toggle('running', running());
-  // Ring takes the instrument's colour: green for drums, orange for vocals
-  $('dial').classList.toggle('drums', state.type === 'drums');
-  $('dial').classList.toggle('vocals', state.type === 'vocals');
+  // Ring takes the instrument's colour
+  fill.style.stroke = instrColor(state.type);
+  fill.style.filter = running() ? `drop-shadow(0 0 10px ${instrColor(state.type)}aa)` : '';
 
   let sub;
   if (running()) sub = targetMs ? (ms >= targetMs ? t('timer.reached') : t('timer.toGo', { t: fmtMin(Math.ceil((targetMs - ms) / 60000)) })) : t('timer.practising');
@@ -50,7 +50,7 @@ function draw() {
   if (!$('finish-form').hidden) sub = t('timer.finished');
   $('dial-sub').textContent = sub;
 
-  document.title = running() ? `${fmtClock(ms)} · ${t(state.type)}` : t('title.timer');
+  document.title = running() ? `${fmtClock(ms)} · ${instrName(state.type)}` : t('title.timer');
 }
 
 function syncControls() {
@@ -163,12 +163,12 @@ $('finish-form').addEventListener('submit', async e => {
   renderToday();
 
   const r = await api('POST', [session]);
-  lastSaved = { key: r.status === 200 ? 'timer.savedOk' : 'timer.savedLocal', vars: { t: fmtMin(minutes), type: t(session.type + '.lower') }, minutes, type: session.type };
+  lastSaved = { key: r.status === 200 ? 'timer.savedOk' : 'timer.savedLocal', vars: { t: fmtMin(minutes), type: instrLower(session.type) }, minutes, type: session.type };
   showMsg(t(lastSaved.key, lastSaved.vars), r.status === 200 ? 'ok' : 'warn', true);
 });
 
 let lastSaved = null; // remembered so the message can be re-translated
-function niceText(min) { return t('timer.nice', { t: fmtMin(min), type: t(state.type + '.lower') }); }
+function niceText(min) { return t('timer.nice', { t: fmtMin(min), type: instrLower(state.type) }); }
 function showMsg(text, kind, withLink) {
   const m = $('saved-msg');
   m.innerHTML = '';
@@ -183,10 +183,23 @@ function showMsg(text, kind, withLink) {
   m.hidden = false;
 }
 
-document.querySelectorAll('.toggle button').forEach(b => b.onclick = () => {
-  state.type = b.dataset.type; saveTimer(); syncControls();
-  if ($('finish-form').hidden === false) $('finish-title').textContent = niceText(Math.round(elapsedMs() / 60000));
-});
+function renderToggle() {
+  const mine = myInstruments(loadSettings());
+  if (!mine.includes(state.type) && !running() && !elapsedMs()) { state.type = mine[0]; saveTimer(); }
+  const list = mine.includes(state.type) ? mine : mine.concat(state.type);
+  const box = $('inst-toggle');
+  box.innerHTML = '';
+  box.classList.toggle('many', list.length > 3);
+  list.forEach(id => {
+    const b = el('button', null, instrName(id));
+    b.type = 'button'; b.dataset.type = id;
+    b.onclick = () => {
+      state.type = id; saveTimer(); syncControls();
+      if ($('finish-form').hidden === false) $('finish-title').textContent = niceText(Math.round(elapsedMs() / 60000));
+    };
+    box.appendChild(b);
+  });
+}
 document.querySelectorAll('.chip').forEach(c => c.onclick = () => {
   state.target = +c.dataset.target;
   state.chimed = elapsedMs() >= state.target * 60000 && state.target > 0; // don't chime for a goal already passed
@@ -209,11 +222,13 @@ function renderChips() {
   });
 }
 document.addEventListener('langchange', () => {
+  renderToggle();
   renderChips(); syncControls(); renderToday();
   if (!$('finish-form').hidden) $('finish-title').textContent = niceText(Math.round(elapsedMs() / 60000));
   if (lastSaved && !$('saved-msg').hidden) showMsg(t(lastSaved.key, lastSaved.vars), lastSaved.key === 'timer.savedOk' ? 'ok' : 'warn', true);
 });
 
+renderToggle();
 renderChips();
 syncControls();
 renderToday();

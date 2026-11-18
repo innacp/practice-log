@@ -4,7 +4,7 @@
 let sessions = loadSessions();
 let settings = loadSettings();
 let filter = 'all';
-let instrument = 'drums';
+let instrument = myInstruments(settings)[0];
 let cloud = false; // true when signed in and the online database answers
 function save() { saveSessions(sessions); }
 
@@ -51,12 +51,15 @@ async function connect() {
     save();
     // Weekly goal lives online too
     const st = await api('GET', null, '', '/api/settings');
-    if (st.status === 200 && st.data && st.data.settings && st.data.settings.weeklyGoal) {
+    if (st.status === 200 && st.data && st.data.settings && (st.data.settings.weeklyGoal || st.data.settings.instruments)) {
       settings = { ...settings, ...st.data.settings };
       saveSettingsLocal(settings);
     } else if (st.status === 200) {
-      api('PUT', settings, '', '/api/settings'); // first time: upload the goal set on this device
+      api('PUT', settings, '', '/api/settings'); // first time: upload the settings from this device
     }
+    renderInstrumentUI();
+    // New accounts: ask once which instruments they practise
+    if (st.status === 200 && !(st.data.settings && st.data.settings.instruments)) openInstrumentPicker(true);
     if (localOnly.length) {
       const up = await api('POST', localOnly);
       if (up.status !== 200) { setSync('sync.partial', 'err'); render(); return; }
@@ -89,14 +92,16 @@ async function cloudDelete(id) {
   setSync(r.status === 200 ? 'sync.ok' : 'sync.delfail', r.status === 200 ? 'ok' : 'err');
 }
 
-const SCALES = {
-  drums:  ['#EEF0F3', '#E3FBC4', '#C9F78E', '#AEF359', '#7DBA2A'],
-  vocals: ['#EEF0F3', '#FEDCC0', '#FCB27A', '#FA8128', '#C25A10'],
-  all:    ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'],
-};
-const DOTS = { drums: 'var(--drums)', vocals: 'var(--vocals)', all: '#CC3FEB' };
-const typeName = type => t(type);              // "Drums" / "Барабани"
-const typeLower = type => t(type + '.lower');  // "drums" / "барабани"
+const typeName = instrName;    // "Guitar" / "Гітара"
+const typeLower = instrLower;  // "guitar" / "гітара"
+// Instruments to show: the ones you chose, plus any you logged earlier
+function shownInstruments() {
+  const mine = myInstruments(settings);
+  const used = [...new Set(sessions.map(s => s.type))].filter(id => INSTR[id] && !mine.includes(id));
+  return mine.concat(used);
+}
+// Label used in the graph tooltip ("30 min guitar" / "Гітара: 30 хв")
+const tipType = type => (type === 'all' ? t('tip.all') : LANG === 'uk' ? typeName(type) : typeLower(type));
 const pretty = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`; };
 
 function visible() {
@@ -194,9 +199,9 @@ function renderGraph() {
       const min = byDay[key] || 0;
       const c = el('span', 'cell' + (d > end ? ' future' : '') + (key === todayKey ? ' today' : '') + (key === justAddedDate ? ' just' : ''));
       c.style.setProperty('--d', (Math.floor(i / 7) * 14 + (i % 7) * 18) + 'ms');
-      c.style.background = SCALES[type][level(min)];
+      c.style.background = scaleFor(type)[level(min)];
       c.dataset.date = key;
-      c.dataset.tip = (min ? t('tip.some', { n: min, type: t('tip.' + type) }) : t('tip.none', { type: t('tip.' + type) })) +
+      c.dataset.tip = (min ? t('tip.some', { n: min, type: tipType(type) }) : t('tip.none', { type: tipType(type) })) +
         ` · ${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`;
       cells.appendChild(c);
       if (d <= end && min) { yearMin += min; daysPractised.add(key); }
@@ -214,7 +219,7 @@ function renderGraph() {
   const legend = document.getElementById('legend');
   legend.innerHTML = '';
   legend.append(t('legend.less'));
-  for (const c of SCALES[filter]) {
+  for (const c of scaleFor(filter)) {
     const s = el('span', 'cell'); s.style.background = c; legend.appendChild(s);
   }
   legend.append(t('legend.more'));
@@ -276,7 +281,7 @@ function renderSessions() {
     };
     li.append(
       el('span', 's-date', pretty(s.date)),
-      el('span', `tag ${s.type}`, typeLower(s.type)),
+      Object.assign(el('span', 'tag', typeLower(s.type)), { style: instrTagStyle(s.type) }),
       el('span', 's-min', t('min', { n: s.minutes })),
       el('span', 's-notes', s.notes || ''),
       del,
@@ -295,7 +300,9 @@ function renderGoal() {
   const startKey = iso(start), todayKey = today();
   const weekList = sessions.filter(s => s.date >= startKey && s.date <= todayKey);
   const byDay = minutesByDay(weekList);
-  const drumsByDay = minutesByDay(weekList.filter(s => s.type === 'drums'));
+  const byDayType = {};
+  weekList.forEach(s => { const d = byDayType[s.date] || (byDayType[s.date] = {}); d[s.type] = (d[s.type] || 0) + s.minutes; });
+  const order = shownInstruments();
   const done = Object.values(byDay).reduce((a, b) => a + b, 0);
   const pct = goal ? done / goal : 0;
 
@@ -321,24 +328,29 @@ function renderGoal() {
     const d = new Date(start); d.setDate(start.getDate() + i);
     const key = iso(d), min = byDay[key] || 0;
     const col = el('div', 'wb' + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' future' : ''));
-    const dMin = drumsByDay[key] || 0, vMin = min - dMin;
+    const parts = order.map(id => [id, (byDayType[key] || {})[id] || 0]).filter(([, m]) => m);
     col.title = `${d.toLocaleDateString(LANG, { weekday: 'long' })}: ` +
-      (min ? [dMin && `${typeLower('drums')} ${fmtMin(dMin)}`, vMin && `${typeLower('vocals')} ${fmtMin(vMin)}`].filter(Boolean).join(', ') : t('goal.none'));
+      (min ? parts.map(([id, m]) => `${typeLower(id)} ${fmtMin(m)}`).join(', ') : t('goal.none'));
     const track = el('div', 'wb-track');
-    // Stacked bar: drums (green) at the bottom, vocals (orange) on top
+    // Stacked bar: first instrument at the bottom
     const bar = el('div', 'wb-bar');
     bar.style.height = (min / max * 100) + '%';
     bar.style.setProperty('--d', i * 60 + 'ms');
-    if (min) {
-      const v = el('span', 'seg vocals'); v.style.flexBasis = (vMin / min * 100) + '%';
-      const dr = el('span', 'seg drums'); dr.style.flexBasis = (dMin / min * 100) + '%';
-      bar.append(v, dr);
-    }
+    parts.slice().reverse().forEach(([id, m]) => {
+      const seg = el('span', 'seg'); seg.style.flexBasis = (m / min * 100) + '%'; seg.style.background = instrColor(id);
+      bar.appendChild(seg);
+    });
     const line = el('div', 'wb-line'); line.style.bottom = (daily / max * 100) + '%';
     track.append(line, bar);
     col.append(track, el('span', null, label));
     bars.appendChild(col);
   });
+
+  // Legend: your instruments + the daily target line
+  const gl = document.getElementById('goal-legend');
+  gl.innerHTML = '';
+  myInstruments(settings).forEach(id => { const k = el('span', 'k', typeName(id)); k.style.setProperty('--k', instrColor(id)); gl.appendChild(k); });
+  gl.appendChild(el('span', 'k target', t('goal.daily')));
 
   if (lastGoalPct !== null && lastGoalPct < 1 && pct >= 1) confetti(document.getElementById('goal-ring-wrap'));
   lastGoalPct = pct;
@@ -393,8 +405,9 @@ function renderRecap() {
 
   const byDay = minutesByDay(list);
   const total = list.reduce((a, s) => a + s.minutes, 0);
-  const drums = list.filter(s => s.type === 'drums').reduce((a, s) => a + s.minutes, 0);
-  const vocals = total - drums;
+  const perType = {};
+  list.forEach(s => { perType[s.type] = (perType[s.type] || 0) + s.minutes; });
+  const typesUsed = shownInstruments().filter(id => perType[id]);
   const [bestKey, bestMin] = Object.entries(byDay).sort((a, b) => b[1] - a[1])[0];
   const { longest } = streaks(byDay);
   const prev = new Date(m); prev.setMonth(prev.getMonth() - 1);
@@ -418,17 +431,17 @@ function renderRecap() {
       t('recap.change', { arrow: up ? '▲' : '▼', pct: Math.abs(change), month: monthLong(prev.getMonth()) }) + (isCurrent ? t('recap.soFar') : '')));
   }
 
-  // Drums / vocals split
+  // Split by instrument
   const split = el('div', 'split');
   const bar = el('div', 'split-bar');
-  const dPart = el('span', 'split-drums'); dPart.style.width = (drums / total * 100) + '%';
-  const vPart = el('span', 'split-vocals'); vPart.style.width = (vocals / total * 100) + '%';
-  bar.append(dPart, vPart);
   const legend = el('div', 'split-legend');
-  legend.append(
-    el('span', 'k drums', `${typeName('drums')} ${fmtMin(drums)} · ${Math.round(drums / total * 100)}%`),
-    el('span', 'k vocals', `${typeName('vocals')} ${fmtMin(vocals)} · ${Math.round(vocals / total * 100)}%`),
-  );
+  typesUsed.forEach(id => {
+    const part = el('span'); part.style.width = (perType[id] / total * 100) + '%'; part.style.background = instrColor(id);
+    bar.appendChild(part);
+    const k = el('span', 'k', `${typeName(id)} ${fmtMin(perType[id])} · ${Math.round(perType[id] / total * 100)}%`);
+    k.style.setProperty('--k', instrColor(id));
+    legend.appendChild(k);
+  });
   split.append(bar, legend);
   body.appendChild(split);
 
@@ -455,17 +468,71 @@ renderStatic();
 // Switching language re-draws everything that JavaScript wrote
 document.addEventListener('langchange', () => {
   renderStatic();
+  renderInstrumentUI();
   if (syncState) setSync(syncState[0], syncState[1]);
   animateNextGraph = true;
   render();
   movePill();
 });
 
-// Instrument toggle
-const toggles = document.querySelectorAll('.toggle button');
-toggles.forEach(b => b.onclick = () => {
-  instrument = b.dataset.type;
-  toggles.forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+// ---------- Instruments: buttons in the form, graph tabs, picker ----------
+function renderInstrumentUI() {
+  const mine = myInstruments(settings);
+  if (!mine.includes(instrument)) instrument = mine[0];
+  const box = document.getElementById('inst-toggle');
+  box.innerHTML = '';
+  box.classList.toggle('many', mine.length > 3);
+  mine.forEach(id => {
+    const b = el('button', id === instrument ? 'on' : null, typeName(id));
+    b.type = 'button'; b.dataset.type = id; b.setAttribute('aria-pressed', id === instrument);
+    b.onclick = () => {
+      instrument = id;
+      box.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-pressed', x === b); });
+    };
+    box.appendChild(b);
+  });
+
+  const list = shownInstruments();
+  if (filter !== 'all' && !list.includes(filter)) filter = 'all';
+  const tabsBox = document.getElementById('tabs');
+  tabsBox.querySelectorAll('button').forEach(b => b.remove());
+  ['all', ...list].forEach(id => {
+    const b = el('button', id === filter ? 'on' : null, id === 'all' ? t('all') : typeName(id));
+    b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.filter = id; b.setAttribute('aria-selected', id === filter);
+    b.onclick = () => {
+      filter = id;
+      tabsBox.querySelectorAll('button').forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
+      movePill();
+      animateNextGraph = true;
+      render();
+    };
+    tabsBox.appendChild(b);
+  });
+  movePill();
+}
+
+const instDialog = document.getElementById('inst-dialog');
+let readPicker = null;
+function openInstrumentPicker() {
+  readPicker = buildInstrumentPicker(document.getElementById('inst-picker'), myInstruments(settings));
+  document.getElementById('inst-error').hidden = true;
+  if (!instDialog.open) instDialog.showModal();
+}
+document.getElementById('inst-edit').onclick = () => openInstrumentPicker();
+document.getElementById('inst-cancel').onclick = () => instDialog.close();
+document.getElementById('inst-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const chosen = readPicker();
+  if (!chosen.length) { document.getElementById('inst-error').hidden = false; return; }
+  settings.instruments = chosen;
+  saveSettingsLocal(settings);
+  instDialog.close();
+  renderInstrumentUI();
+  render();
+  if (cloud) {
+    const r = await api('PUT', { instruments: chosen }, '', '/api/settings');
+    setSync(r.status === 200 ? 'sync.ok' : 'sync.fail', r.status === 200 ? 'ok' : 'err');
+  }
 });
 
 // Form
@@ -491,15 +558,6 @@ form.addEventListener('submit', e => {
   cloudSave([session]);
 });
 
-// Tabs
-const tabs = document.querySelectorAll('.tabs button');
-tabs.forEach(b => b.onclick = () => {
-  filter = b.dataset.filter;
-  tabs.forEach(x => { x.classList.toggle('on', x === b); x.setAttribute('aria-selected', x === b); });
-  movePill();
-  animateNextGraph = true;
-  render();
-});
 
 // Click a square to pre-fill that date
 const graphEl = document.getElementById('graph');
@@ -536,16 +594,16 @@ document.getElementById('import').onchange = async e => {
     const data = JSON.parse(await file.text());
     if (!Array.isArray(data)) throw new Error();
     const ids = new Set(sessions.map(s => s.id));
-    const added = data.filter(s => s && s.id && s.date && (s.type === 'drums' || s.type === 'vocals') && s.minutes > 0 && !ids.has(s.id));
+    const added = data.filter(s => s && s.id && s.date && INSTR[s.type] && s.minutes > 0 && !ids.has(s.id));
     sessions.push(...added);
-    save(); render();
+    save(); renderInstrumentUI(); render();
     if (added.length) cloudSave(added);
     alert(t('import.ok', { n: added.length }));
   } catch { alert(t('import.bad')); }
   e.target.value = '';
 };
 
-movePill();
+renderInstrumentUI();
 document.fonts && document.fonts.ready.then(movePill);
 render();   // show the cached copy right away
 connect();  // then load from the online database

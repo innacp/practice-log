@@ -2,10 +2,10 @@
 const $ = id => document.getElementById(id);
 const uname = (location.pathname.match(/^\/u\/([^/]+)/) || [])[1] || new URLSearchParams(location.search).get('u') || '';
 const SCALE = ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'];
-let profile = null, days = {};
+let profile = null, days = {}, chosen = null;
 
 function level(min) { return !min ? 0 : min <= 15 ? 1 : min <= 30 ? 2 : min < 60 ? 3 : 4; }
-const total = d => (d ? d.drums + d.vocals : 0);
+const total = d => (d ? Object.values(d).reduce((a, b) => a + b, 0) : 0);
 
 function streaks() {
   let current = 0, longest = 0, run = 0, prev = null;
@@ -35,13 +35,14 @@ function render() {
 
   const { current, longest } = streaks();
   const practised = Object.keys(days).filter(k => total(days[k]));
-  let drums = 0, vocals = 0;
-  Object.values(days).forEach(d => { drums += d.drums; vocals += d.vocals; });
+  const per = {};
+  Object.values(days).forEach(d => Object.entries(d).forEach(([id, m]) => { per[id] = (per[id] || 0) + m; }));
+  const sumAll = Object.values(per).reduce((a, b) => a + b, 0);
   $('u-streak').textContent = current;
   $('u-longest').textContent = longest;
   $('u-days').textContent = practised.length;
   $('u-days-label').textContent = plural(practised.length, 'recap.daysWord');
-  $('u-hours').textContent = +((drums + vocals) / 60).toFixed(1);
+  $('u-hours').textContent = +(sumAll / 60).toFixed(1);
 
   // Year graph (same look as the log page)
   const graph = $('graph');
@@ -81,17 +82,20 @@ function render() {
   SCALE.forEach(c => { const s = el('span', 'cell'); s.style.background = c; legend.appendChild(s); });
   legend.append(t('legend.more'));
 
-  // Drums / vocals split
+  // Instruments: the ones they chose, then anything else they logged; split bar by time
+  const order = (chosen || []).filter(id => INSTR[id]);
+  Object.keys(per).forEach(id => { if (!order.includes(id)) order.push(id); });
+  const ib = $('u-instruments'); ib.innerHTML = '';
+  order.forEach(id => { const c = el('span', 'tag', instrName(id)); c.style.cssText = instrTagStyle(id); ib.appendChild(c); });
   const split = $('u-split'); split.innerHTML = '';
-  const sum = drums + vocals;
-  if (sum) {
+  if (sumAll) {
     const bar = el('div', 'split-bar');
-    const a = el('span', 'split-drums'); a.style.width = (drums / sum * 100) + '%';
-    const b = el('span', 'split-vocals'); b.style.width = (vocals / sum * 100) + '%';
-    bar.append(a, b);
     const lg = el('div', 'split-legend');
-    lg.append(el('span', 'k drums', `${t('drums')} ${fmtMin(drums)} · ${Math.round(drums / sum * 100)}%`),
-      el('span', 'k vocals', `${t('vocals')} ${fmtMin(vocals)} · ${Math.round(vocals / sum * 100)}%`));
+    order.filter(id => per[id]).forEach(id => {
+      const p = el('span'); p.style.width = (per[id] / sumAll * 100) + '%'; p.style.background = instrColor(id); bar.appendChild(p);
+      const k = el('span', 'k', `${instrName(id)} ${fmtMin(per[id])} · ${Math.round(per[id] / sumAll * 100)}%`);
+      k.style.setProperty('--k', instrColor(id)); lg.appendChild(k);
+    });
     split.append(bar, lg);
   }
 }
@@ -111,7 +115,7 @@ function message(key) { const m = $('u-msg'); m.textContent = t(key); m.hidden =
 
 (async () => {
   const r = await api('GET', null, '?u=' + encodeURIComponent(uname.toLowerCase()), '/api/profile');
-  if (r.status === 200) { profile = r.data.profile; days = r.data.days || {}; $('u-page').hidden = false; render(); }
+  if (r.status === 200) { profile = r.data.profile; days = r.data.days || {}; chosen = r.data.instruments; $('u-page').hidden = false; render(); }
   else if (r.status === 403) message('user.private');
   else if (r.status === 404) message('user.notFound');
   else message(r.status === 503 || r.status === 0 ? 'auth.noDb' : 'err.generic');

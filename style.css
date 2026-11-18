@@ -988,3 +988,30 @@ a.ghost.btn-link { color: var(--ink); }
   .account-btn:not(.signed-in) { padding: 0 10px; }
   .user-stats .streak-stats { grid-template-columns: repeat(2, minmax(0, 1fr)); row-gap: 12px; }
 }
+
+/* =========================================================
+   Any instruments: picker chips, wrapping buttons, coloured legends
+   ========================================================= */
+.form-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.form-head .link { font-size: 13px; padding: 0; }
+.toggle.many { flex-wrap: wrap; }
+.toggle.many button { flex: 1 1 calc(33% - 8px); min-width: 0; }
+.tabs { max-width: 100%; overflow-x: auto; scrollbar-width: none; }
+.tabs::-webkit-scrollbar { display: none; }
+.tabs button { white-space: nowrap; flex: none; }
+.split-legend .k::before { background: var(--k, #C800F5); }
+.split-legend { row-gap: 4px; }
+.inst-picker { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin: 4px 0; }
+.inst-chip {
+  display: flex !important; flex-direction: row !important; align-items: center; gap: 10px !important; padding: 10px 12px;
+  border: 1px solid var(--field); border-radius: 12px; background: #fff; cursor: pointer; color: var(--ink) !important; font-size: 14px !important;
+  transition: border-color 0.2s, background-color 0.2s;
+}
+.inst-chip:hover { border-color: #C9A6E8; }
+.inst-chip:has(input:checked) { border-color: #C800F5; background: #FBF2FE; font-weight: 600; }
+.inst-chip input { width: 18px; height: 18px; margin: 0; accent-color: #C800F5; }
+.inst-dot { width: 12px; height: 12px; border-radius: 50%; flex: none; }
+.inst-dialog .muted { margin: -6px 0 4px; }
+.u-instruments { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }
+.u-instruments:empty { display: none; }
+.split-legend .k.target::before { background: none; }

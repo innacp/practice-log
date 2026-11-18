@@ -4,13 +4,14 @@
 //   DELETE /api/sessions?id=...   -> delete one session
 // Every request needs a signed-in user; each user has their own list.
 import { redis, begin, readBody } from './_lib.js';
+import { INSTRUMENT_IDS } from './_instruments.js';
 
 function clean(s) {
   if (!s || typeof s !== 'object') return null;
   const minutes = Number(s.minutes);
   if (typeof s.id !== 'string' || !s.id || s.id.length > 100) return null;
   if (typeof s.date !== 'string' || !/^\d{4}-\d{2}-\d{2}$/.test(s.date)) return null;
-  if (s.type !== 'drums' && s.type !== 'vocals') return null;
+  if (!INSTRUMENT_IDS.has(s.type)) return null;
   if (!Number.isFinite(minutes) || minutes <= 0 || minutes > 1440) return null;
   return {
     id: s.id,

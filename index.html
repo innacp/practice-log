@@ -75,11 +75,11 @@
 
     <section class="hero">
       <form class="card log" id="log-form">
-        <h2 data-i18n="log.title">Log a session</h2>
-        <div class="toggle" role="group" data-i18n-aria="instrument" aria-label="Instrument">
-          <button type="button" data-type="drums" class="on" aria-pressed="true" data-i18n="drums">Drums</button>
-          <button type="button" data-type="vocals" aria-pressed="false" data-i18n="vocals">Vocals</button>
+        <div class="form-head">
+          <h2 data-i18n="log.title">Log a session</h2>
+          <button type="button" class="link" id="inst-edit" data-i18n="inst.edit">Edit instruments</button>
         </div>
+        <div class="toggle" id="inst-toggle" role="group" data-i18n-aria="instrument" aria-label="Instrument"></div>
         <div class="two">
           <label><span data-i18n="log.date">Date</span> <input type="date" name="date" required></label>
           <label><span data-i18n="log.howlong">How long</span>
@@ -128,7 +128,7 @@
           </div>
           <div class="week-bars" id="week-bars" data-i18n-aria="goal.bars" aria-label="Minutes each day this week"></div>
         </div>
-        <div class="split-legend goal-legend"><span class="k drums" data-i18n="drums">Drums</span><span class="k vocals" data-i18n="vocals">Vocals</span><span class="k target" data-i18n="goal.daily">Daily target</span></div>
+        <div class="split-legend goal-legend" id="goal-legend"></div>
       </div>
     </section>
 
@@ -138,11 +138,8 @@
           <h2 data-i18n="year.title">The last year</h2>
           <p class="muted" id="year-summary"></p>
         </div>
-        <div class="tabs" role="tablist">
+        <div class="tabs" id="tabs" role="tablist">
           <span class="tab-pill" aria-hidden="true"></span>
-          <button type="button" role="tab" data-filter="all" class="on" aria-selected="true" data-i18n="all">All</button>
-          <button type="button" role="tab" data-filter="drums" aria-selected="false" data-i18n="drums">Drums</button>
-          <button type="button" role="tab" data-filter="vocals" aria-selected="false" data-i18n="vocals">Vocals</button>
         </div>
       </div>
       <div class="graph-scroll"><div class="graph-box"><div id="graph"></div><div class="legend" id="legend"></div></div></div>
@@ -173,6 +170,21 @@
   </main>
 
   <div id="tip" hidden></div>
+
+  <!-- Choose instruments -->
+  <dialog class="w-dialog inst-dialog" id="inst-dialog">
+    <form method="dialog" id="inst-form">
+      <h2 data-i18n="inst.welcome">What do you practise?</h2>
+      <p class="muted" data-i18n="inst.hint"></p>
+      <div id="inst-picker"></div>
+      <p class="error" id="inst-error" hidden data-i18n="inst.needOne"></p>
+      <div class="w-actions">
+        <span class="spacer"></span>
+        <button type="button" class="ghost" id="inst-cancel" data-i18n="cancel">Cancel</button>
+        <button type="submit" class="primary" data-i18n="save">Save</button>
+      </div>
+    </form>
+  </dialog>
   <script src="i18n.js"></script>
   <script src="store.js"></script>
   <script src="app.js"></script>
