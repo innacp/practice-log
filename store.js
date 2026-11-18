@@ -1,6 +1,5 @@
 // Shared by the log page and the timer page: local cache, online API and small helpers.
 const KEY = 'practice-log-v1';
-const PASS_KEY = 'practice-log-passcode';
 const SETTINGS_KEY = 'practice-log-settings';
 const monthShort = i => t('months')[i];
 const monthLong = i => t('monthsLong')[i];
@@ -19,23 +18,24 @@ function saveSettingsLocal(s) {
   try { localStorage.setItem(SETTINGS_KEY, JSON.stringify(s)); } catch {}
 }
 
-function getPass() { try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; } }
-function setPass(p) { try { p ? localStorage.setItem(PASS_KEY, p) : localStorage.removeItem(PASS_KEY); } catch {} if (!p) setOwner(false); }
-
-// The admin gear in the header is only shown on devices where the right passcode was entered.
-const OWNER_KEY = 'practice-log-owner';
-function setOwner(on) {
-  try { on ? localStorage.setItem(OWNER_KEY, '1') : localStorage.removeItem(OWNER_KEY); } catch {}
-  document.querySelectorAll('.admin-link').forEach(a => { a.hidden = !on; });
+// ---------------------------------------------------------------- accounts
+// Which account the cached data in this browser belongs to (so one person's
+// offline sessions never get uploaded into someone else's account).
+const CACHE_OWNER_KEY = 'practice-log-cache-owner';
+function cacheOwner() { try { return localStorage.getItem(CACHE_OWNER_KEY) || ''; } catch { return ''; } }
+function setCacheOwner(id) { try { id ? localStorage.setItem(CACHE_OWNER_KEY, id) : localStorage.removeItem(CACHE_OWNER_KEY); } catch {} }
+function clearLocalData() {
+  try { [KEY, SETTINGS_KEY, CACHE_OWNER_KEY, 'practice-log-timer'].forEach(k => localStorage.removeItem(k)); } catch {}
 }
-try { setOwner(localStorage.getItem(OWNER_KEY) === '1'); } catch { setOwner(false); }
 
-// Calls the online API. Returns { status, data }; status 0 means offline.
+// Calls the online API (the login cookie goes along automatically).
+// Returns { status, data }; status 0 means offline.
 async function api(method, body, query = '', path = '/api/sessions') {
   try {
     const r = await fetch(path + query, {
       method,
-      headers: { 'x-passcode': getPass(), ...(body ? { 'Content-Type': 'application/json' } : {}) },
+      credentials: 'same-origin',
+      headers: body ? { 'Content-Type': 'application/json' } : {},
       body: body ? JSON.stringify(body) : undefined,
     });
     let data = null;
@@ -45,6 +45,44 @@ async function api(method, body, query = '', path = '/api/sessions') {
     return { status: 0, data: null };
   }
 }
+
+// Who is signed in: { user, ownerClaimable, emailReset } or null when there is no online database
+let authState = null;
+const authReady = api('GET', null, '', '/api/auth').then(r => {
+  authState = r.status === 200 && r.data ? r.data : null;
+  renderAccountButton();
+  return authState;
+});
+function currentUser() { return authState && authState.user; }
+
+async function logOut() {
+  await api('POST', null, '?action=logout', '/api/auth');
+  clearLocalData();
+  location.href = '/';
+}
+
+// Header: "Log in" button, or a round avatar with the first letter linking to the profile.
+// The admin gear only shows for the admin account.
+function renderAccountButton() {
+  const user = currentUser();
+  document.querySelectorAll('.admin-link').forEach(a => { a.hidden = !(user && user.role === 'admin'); });
+  document.querySelectorAll('.account-btn').forEach(b => {
+    b.hidden = !authState; // no online database: no accounts
+    b.classList.toggle('signed-in', !!user);
+    if (user) {
+      b.href = '/profile';
+      b.textContent = (user.name || user.email || '?').trim().charAt(0).toUpperCase();
+      b.title = user.name;
+      b.setAttribute('aria-label', t('auth.myProfile') + ': ' + user.name);
+    } else {
+      b.href = '/login?next=' + encodeURIComponent(location.pathname);
+      b.textContent = t('auth.login');
+      b.title = '';
+      b.removeAttribute('aria-label');
+    }
+  });
+}
+document.addEventListener('langchange', renderAccountButton);
 
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;

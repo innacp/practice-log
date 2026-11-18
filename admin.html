@@ -20,24 +20,20 @@
         <span class="wordmark">Muza</span>
       </a>
       <span class="admin-badge">Admin · Theory lessons</span>
+      <a class="account-btn" href="/login" hidden>Log in</a>
       <a class="link admin-view" href="/theory" target="_blank" rel="noopener">View theory page ↗</a>
     </div>
   </header>
 
   <main class="wrap admin-main">
-    <!-- Passcode -->
-    <form class="card unlock" id="admin-lock" hidden>
+    <!-- Not signed in as admin -->
+    <section class="card unlock" id="admin-lock" hidden>
       <div>
         <h2>Admin sign-in</h2>
-        <p class="muted">Enter the same passcode you use to unlock your log.</p>
+        <p class="muted" id="admin-lock-text">Log in with the admin account to edit the theory lessons.</p>
       </div>
-      <div class="unlock-row">
-        <label class="sr-only" for="admin-pass">Passcode</label>
-        <input type="password" id="admin-pass" autocomplete="current-password" placeholder="Passcode" required>
-        <button type="submit" class="primary">Open admin</button>
-      </div>
-      <p class="error" id="admin-lock-error" role="alert" hidden></p>
-    </form>
+      <div class="banner-actions"><a class="primary btn-link" href="/login?next=/admin">Log in</a></div>
+    </section>
 
     <p class="card admin-msg" id="admin-msg" hidden></p>
 

@@ -1,12 +1,12 @@
 // Settings API (weekly goal), stored next to the sessions.
 //   GET /api/settings  -> { settings }
 //   PUT /api/settings  -> save { weeklyGoal } (minutes per week)
-import { redis, guard, readBody } from './_lib.js';
-
-const KEY = 'practice-log:settings';
+import { redis, begin, readBody } from './_lib.js';
 
 export default async function handler(req, res) {
-  if (!guard(req, res)) return;
+  const me = await begin(req, res, { needUser: true });
+  if (!me) return;
+  const KEY = 'settings:' + me.id;
 
   try {
     if (req.method === 'GET') {

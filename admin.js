@@ -1,6 +1,6 @@
 // Admin panel for the theory lessons.
 // Loads the saved lessons (or the built-in ones), lets you edit them visually in
-// English and Ukrainian, and saves the whole list to /api/lessons with the passcode.
+// English and Ukrainian, and saves the whole list to /api/lessons (admin account only).
 const $ = id => document.getElementById(id);
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
 const LEVEL_NAMES = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
@@ -26,20 +26,17 @@ async function load() {
   if (r.status === 503 || r.status === 404 || r.status === 0) {
     $('admin-lock').hidden = true;
     message(r.status === 503
-      ? 'The online database or passcode is not set up in Vercel yet, so lessons can’t be saved.'
+      ? 'The online database is not set up in Vercel yet, so lessons can’t be saved.'
       : 'The admin panel only works on the live site (it needs the online database).', 'warn');
     return;
   }
   if (r.status !== 200 || !r.data) { message('Could not load lessons. Try reloading the page.', 'err'); return; }
-  setOwner(!!r.data.admin);
   if (!r.data.admin) {
+    await authReady;
     $('admin-app').hidden = true;
     $('save-bar').hidden = true;
     $('admin-lock').hidden = false;
-    const err = $('admin-lock-error');
-    err.hidden = !getPass();
-    err.textContent = getPass() ? 'That passcode didn’t work. Try again.' : '';
-    $('admin-pass').focus();
+    if (currentUser()) $('admin-lock-text').textContent = 'You are logged in as ' + currentUser().name + ', which is not the admin account. Log in with the admin account to edit lessons.';
     return;
   }
   lessons = clone(r.data.lessons || window.LESSONS);
@@ -56,12 +53,6 @@ async function load() {
 }
 let usingBuiltIn = true;
 
-$('admin-lock').addEventListener('submit', e => {
-  e.preventDefault();
-  setPass($('admin-pass').value);
-  $('admin-pass').value = '';
-  load();
-});
 
 // ------------------------------------------------------------------ lesson list
 function renderList() {
@@ -367,8 +358,8 @@ $('save').onclick = async () => {
     usingBuiltIn = false;
     updateSaveState();
     confetti($('save'));
-  } else if (r.status === 401) {
-    alert('Your passcode is no longer accepted. Sign in again (your edits are still on screen; copy anything important first).');
+  } else if (r.status === 401 || r.status === 403) {
+    alert('You are no longer logged in as admin. Log in again in another tab, then press Save again (your edits are still here).');
     updateSaveState();
   } else {
     alert('Saving failed' + (r.data && r.data.error ? ` (${r.data.error})` : '') + '. Your edits are still here; try again.');

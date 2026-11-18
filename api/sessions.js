@@ -2,10 +2,8 @@
 //   GET    /api/sessions          -> list all sessions
 //   POST   /api/sessions          -> add one session, or an array of sessions (import)
 //   DELETE /api/sessions?id=...   -> delete one session
-// Every request needs the header `x-passcode` matching the PRACTICE_PASSCODE env var.
-import { redis, guard, readBody } from './_lib.js';
-
-const KEY = 'practice-log:sessions';
+// Every request needs a signed-in user; each user has their own list.
+import { redis, begin, readBody } from './_lib.js';
 
 function clean(s) {
   if (!s || typeof s !== 'object') return null;
@@ -25,7 +23,9 @@ function clean(s) {
 }
 
 export default async function handler(req, res) {
-  if (!guard(req, res)) return;
+  const me = await begin(req, res, { needUser: true });
+  if (!me) return;
+  const KEY = 'sessions:' + me.id;
 
   try {
     if (req.method === 'GET') {

@@ -1,9 +1,9 @@
 // Theory lessons edited in the admin panel.
-//   GET    /api/lessons   -> { lessons: [...] | null, admin: true|false }   (public; admin = passcode is right)
-//   PUT    /api/lessons   -> save the whole list                             (passcode)
-//   DELETE /api/lessons   -> forget edits, the site goes back to the built-in lessons (passcode)
+//   GET    /api/lessons   -> { lessons: [...] | null, admin: true|false }   (public; admin = signed in as admin)
+//   PUT    /api/lessons   -> save the whole list                             (admin)
+//   DELETE /api/lessons   -> forget edits, the site goes back to the built-in lessons (admin)
 // When nothing is saved, the theory page uses the lessons in lessons-1/2/3.js.
-import { redis, configured, passcodeOk, readBody } from './_lib.js';
+import { redis, begin, readBody } from './_lib.js';
 
 const KEY = 'practice-log:lessons';
 const LEVELS = new Set(['beginner', 'intermediate', 'advanced']);
@@ -33,9 +33,9 @@ function validLesson(l) {
 }
 
 export default async function handler(req, res) {
-  res.setHeader('Cache-Control', 'no-store');
-  if (!configured()) return res.status(503).json({ error: 'not-configured' });
-  const admin = passcodeOk(req.headers['x-passcode']);
+  const me = await begin(req, res);
+  if (!me) return;
+  const admin = me.role === 'admin';
 
   try {
     if (req.method === 'GET') {
@@ -45,7 +45,7 @@ export default async function handler(req, res) {
       return res.status(200).json({ lessons: Array.isArray(lessons) && lessons.length ? lessons : null, admin });
     }
 
-    if (!admin) return res.status(401).json({ error: 'wrong-passcode' });
+    if (!admin) return res.status(me.id ? 403 : 401).json({ error: 'not-admin' });
 
     if (req.method === 'PUT') {
       const body = readBody(req) || {};

@@ -1,0 +1,90 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Profile · Muza</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <meta name="theme-color" content="#D100FF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="profile-page" data-title="title.profile">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <img class="logo" src="favicon.svg" width="34" height="34" alt="">
+        <span class="wordmark" data-i18n="brand">Muza</span>
+      </a>
+      <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
+        <a href="/" data-i18n="nav.log">Log</a>
+        <a href="/timer" data-i18n="nav.timer">Timer</a>
+        <a href="/theory" data-i18n="nav.theory">Theory</a>
+      </nav>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="uk" lang="uk">UA</button>
+      </div>
+      <a class="admin-link" hidden href="/admin" data-i18n-aria="admin.link" aria-label="Admin" title="Admin">
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-2.82 1.17V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-2.82-1.17l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 3.17 14H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.17-2.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9.91 3.17V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 2.82 1.17l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 20.83 10H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
+      </a>
+      <a class="account-btn" href="/login" hidden>Log in</a>
+    </div>
+  </header>
+
+  <main class="wrap profile-main" id="profile-main" hidden>
+    <section class="card profile-head">
+      <span class="avatar avatar-lg" id="p-avatar">M</span>
+      <div class="profile-who">
+        <h1><span id="p-name"></span> <span class="role-badge" id="p-admin" hidden data-i18n="prof.adminBadge">Admin</span></h1>
+        <p class="muted" id="p-email"></p>
+      </div>
+      <div class="profile-head-actions">
+        <a class="ghost btn-link" id="p-view" href="#" data-i18n="prof.view">View public page</a>
+        <button type="button" class="ghost" id="p-logout" data-i18n="auth.logout">Log out</button>
+      </div>
+    </section>
+
+    <form class="card profile-form" id="f-profile">
+      <h2 data-i18n="prof.title">Your profile</h2>
+      <div class="two">
+        <label><span data-i18n="prof.name">Name</span><input type="text" name="name" maxlength="60" required></label>
+        <label><span data-i18n="prof.username">Username</span><input type="text" name="username" maxlength="24" pattern="[a-z0-9][a-z0-9\-]{1,23}" required>
+          <small id="p-url"></small></label>
+      </div>
+      <label><span data-i18n="prof.bio">About you</span><textarea name="bio" rows="3" maxlength="300" data-i18n-ph="prof.bioPh"></textarea></label>
+      <label class="switch-row">
+        <input type="checkbox" name="public">
+        <span><b data-i18n="prof.public">Public profile</b><small data-i18n="prof.publicHint"></small></span>
+      </label>
+      <p class="error" role="alert" hidden></p>
+      <div class="form-actions"><button type="submit" class="primary" data-i18n="prof.save">Save profile</button><span class="saved-note" hidden data-i18n="prof.saved">Saved!</span></div>
+    </form>
+
+    <form class="card profile-form" id="f-password">
+      <h2 data-i18n="prof.security">Password</h2>
+      <div class="two">
+        <label><span data-i18n="prof.current">Current password</span><input type="password" name="current" autocomplete="current-password" required></label>
+        <label><span data-i18n="auth.newPass">New password</span><input type="password" name="password" autocomplete="new-password" minlength="8" required></label>
+      </div>
+      <p class="error" role="alert" hidden></p>
+      <div class="form-actions"><button type="submit" class="ghost" data-i18n="prof.changePass">Change password</button><span class="saved-note" hidden data-i18n="prof.passChanged">Password changed.</span></div>
+    </form>
+
+    <form class="card profile-form danger-zone" id="f-delete">
+      <h2 data-i18n="prof.danger">Delete account</h2>
+      <p class="muted" data-i18n="prof.deleteText"></p>
+      <label><span data-i18n="auth.password">Password</span><input type="password" name="password" autocomplete="current-password" required></label>
+      <p class="error" role="alert" hidden></p>
+      <div class="form-actions"><button type="submit" class="ghost danger" data-i18n="prof.danger">Delete account</button></div>
+    </form>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="store.js"></script>
+  <script src="profile.js"></script>
+</body>
+</html>

@@ -1,15 +1,14 @@
-// Muza — sessions are saved online (Vercel + Redis, behind a passcode)
+// Muza — sessions are saved online in your account (Vercel + Redis)
 // and cached in this browser's localStorage. Without the online database it
 // falls back to this browser only. Shared helpers live in store.js.
 let sessions = loadSessions();
 let settings = loadSettings();
 let filter = 'all';
 let instrument = 'drums';
-let cloud = false; // true once the online database is unlocked
+let cloud = false; // true when signed in and the online database answers
 function save() { saveSessions(sessions); }
 
 let syncState = null;    // [key, kind] of the badge, re-translated on language change
-let unlockErrKey = null;
 function setSync(key, kind) {
   syncState = key ? [key, kind] : null;
   const s = document.getElementById('sync');
@@ -19,34 +18,35 @@ function setSync(key, kind) {
   s.hidden = !text;
 }
 
-function showLocked(msgKey) {
-  unlockErrKey = msgKey || null;
-  document.body.classList.add('locked');
-  document.getElementById('unlock').hidden = false;
-  document.getElementById('lock').hidden = true;
-  const err = document.getElementById('unlock-error');
-  err.textContent = msgKey ? t(msgKey) : '';
-  err.hidden = !msgKey;
-  setSync('sync.locked', 'warn');
-  document.getElementById('passcode').focus();
-}
-
-function showUnlocked() {
-  document.body.classList.remove('locked');
-  document.getElementById('unlock').hidden = true;
-  document.getElementById('lock').hidden = !cloud;
+// Banner inviting visitors to log in / sign up so their progress is saved online
+function showSignInBanner(on) {
+  document.getElementById('signin-banner').hidden = !on;
 }
 
 // Try to load from the database. Falls back to this-browser-only mode when no database exists.
 async function connect() {
-  const res = await api('GET');
+  await authReady;
+  const user = currentUser();
+  if (!user) {
+    cloud = false;
+    showSignInBanner(!!authState); // accounts exist only when the online database is set up
+    setSync(authState ? '' : 'sync.local', 'warn');
+    render();
+    return;
+  }
 
+  const res = await api('GET');
   if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
     cloud = true;
-    setOwner(true);
+    showSignInBanner(false);
     const remote = res.data.sessions;
     const remoteIds = new Set(remote.map(s => s.id));
-    const localOnly = sessions.filter(s => !remoteIds.has(s.id));
+    // Sessions logged on this device before signing in move into the account,
+    // unless they belong to a different account that used this browser before.
+    const mine = !cacheOwner() || cacheOwner() === user.id;
+    const localOnly = mine ? sessions.filter(s => !remoteIds.has(s.id)) : [];
+    if (!mine) settings = { weeklyGoal: 180 };
+    setCacheOwner(user.id);
     sessions = remote.concat(localOnly);
     save();
     // Weekly goal lives online too
@@ -58,26 +58,18 @@ async function connect() {
       api('PUT', settings, '', '/api/settings'); // first time: upload the goal set on this device
     }
     if (localOnly.length) {
-      const up = await api('POST', localOnly).catch(() => ({ status: 0 }));
-      if (up.status !== 200) { setSync('sync.partial', 'err'); showUnlocked(); render(); return; }
+      const up = await api('POST', localOnly);
+      if (up.status !== 200) { setSync('sync.partial', 'err'); render(); return; }
     }
     setSync('sync.ok', 'ok');
-    showUnlocked();
     render();
     return;
   }
 
-  if (res.status === 401) {
-    cloud = false;
-    setOwner(false);
-    showLocked(getPass() ? 'unlock.wrong' : '');
-    return;
-  }
-
-  // 404 (no API), 503 (database not set up yet) or offline: this browser only
+  // Signed out on the server, database missing, or offline: this browser only
   cloud = false;
+  showSignInBanner(res.status === 401);
   setSync(res.status === 503 ? 'sync.nodb' : 'sync.local', 'warn');
-  showUnlocked();
   render();
 }
 
@@ -86,7 +78,7 @@ async function cloudSave(list) {
   setSync('sync.saving');
   const r = await api('POST', list).catch(() => ({ status: 0 }));
   if (r.status === 200) setSync('sync.ok', 'ok');
-  else if (r.status === 401) showLocked('unlock.changed');
+  else if (r.status === 401) { cloud = false; showSignInBanner(true); setSync('sync.fail', 'err'); }
   else setSync('sync.fail', 'err');
 }
 
@@ -96,21 +88,6 @@ async function cloudDelete(id) {
   const r = await api('DELETE', null, '?id=' + encodeURIComponent(id)).catch(() => ({ status: 0 }));
   setSync(r.status === 200 ? 'sync.ok' : 'sync.delfail', r.status === 200 ? 'ok' : 'err');
 }
-
-document.getElementById('unlock').addEventListener('submit', e => {
-  e.preventDefault();
-  setPass(document.getElementById('passcode').value);
-  document.getElementById('passcode').value = '';
-  connect();
-});
-document.getElementById('lock').onclick = () => {
-  setPass('');
-  cloud = false;
-  sessions = [];
-  save();
-  render();
-  showLocked();
-};
 
 const SCALES = {
   drums:  ['#EEF0F3', '#E3FBC4', '#C9F78E', '#AEF359', '#7DBA2A'],
@@ -479,7 +456,6 @@ renderStatic();
 document.addEventListener('langchange', () => {
   renderStatic();
   if (syncState) setSync(syncState[0], syncState[1]);
-  if (unlockErrKey) document.getElementById('unlock-error').textContent = t(unlockErrKey);
   animateNextGraph = true;
   render();
   movePill();

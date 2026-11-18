@@ -1,0 +1,92 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Log in · Muza</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <meta name="theme-color" content="#D100FF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="auth-page" data-title="title.login">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <img class="logo" src="favicon.svg" width="34" height="34" alt="">
+        <span class="wordmark" data-i18n="brand">Muza</span>
+      </a>
+      <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
+        <a href="/" data-i18n="nav.log">Log</a>
+        <a href="/timer" data-i18n="nav.timer">Timer</a>
+        <a href="/theory" data-i18n="nav.theory">Theory</a>
+      </nav>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="uk" lang="uk">UA</button>
+      </div>
+    </div>
+  </header>
+
+  <main class="wrap auth-main">
+    <section class="card auth-card">
+      <p class="auth-nodb" id="auth-nodb" hidden data-i18n="auth.noDb"></p>
+
+      <!-- Log in -->
+      <form id="f-login" class="auth-form" data-mode="login">
+        <h1 data-i18n="auth.welcomeBack">Welcome back</h1>
+        <label><span data-i18n="auth.email">Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <label><span data-i18n="auth.password">Password</span><input type="password" name="password" autocomplete="current-password" required></label>
+        <p class="error" role="alert" hidden></p>
+        <button type="submit" class="primary big" data-i18n="auth.login">Log in</button>
+        <button type="button" class="link" data-go="forgot" data-i18n="auth.forgot">Forgot password?</button>
+        <p class="auth-switch"><span data-i18n="auth.noAccount">No account yet?</span> <button type="button" class="link" data-go="signup" data-i18n="auth.signup">Sign up</button></p>
+      </form>
+
+      <!-- Sign up -->
+      <form id="f-signup" class="auth-form" data-mode="signup" hidden>
+        <h1 data-i18n="auth.create">Create your account</h1>
+        <label><span data-i18n="auth.name">Your name</span><input type="text" name="name" autocomplete="name" maxlength="60" required></label>
+        <label><span data-i18n="auth.email">Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <label><span data-i18n="auth.password">Password</span><input type="password" name="password" autocomplete="new-password" minlength="8" required>
+          <small data-i18n="auth.passwordHint">At least 8 characters</small></label>
+        <details class="owner-box" id="owner-box" hidden>
+          <summary data-i18n="auth.owner">I'm the site owner</summary>
+          <p class="muted" data-i18n="auth.ownerHint"></p>
+          <label><span data-i18n="auth.ownerPasscode">Old passcode</span><input type="password" name="ownerPasscode" autocomplete="off"></label>
+        </details>
+        <p class="error" role="alert" hidden></p>
+        <button type="submit" class="primary big" data-i18n="auth.signup">Sign up</button>
+        <p class="auth-switch"><span data-i18n="auth.haveAccount">Already have an account?</span> <button type="button" class="link" data-go="login" data-i18n="auth.login">Log in</button></p>
+      </form>
+
+      <!-- Forgot password -->
+      <form id="f-forgot" class="auth-form" data-mode="forgot" hidden>
+        <h1 data-i18n="auth.forgotTitle">Reset your password</h1>
+        <p class="muted" data-i18n="auth.forgotText"></p>
+        <label><span data-i18n="auth.email">Email</span><input type="email" name="email" autocomplete="email" required></label>
+        <p class="error" role="alert" hidden></p>
+        <p class="auth-ok" role="status" hidden></p>
+        <button type="submit" class="primary big" data-i18n="auth.sendLink">Send reset link</button>
+        <button type="button" class="link" data-go="login" data-i18n="auth.backToLogin">Back to log in</button>
+      </form>
+
+      <!-- New password (from the email link) -->
+      <form id="f-reset" class="auth-form" data-mode="reset" hidden>
+        <h1 data-i18n="auth.newPassTitle">Choose a new password</h1>
+        <label><span data-i18n="auth.newPass">New password</span><input type="password" name="password" autocomplete="new-password" minlength="8" required>
+          <small data-i18n="auth.passwordHint">At least 8 characters</small></label>
+        <p class="error" role="alert" hidden></p>
+        <button type="submit" class="primary big" data-i18n="auth.savePass">Save password</button>
+      </form>
+    </section>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="store.js"></script>
+  <script src="login.js"></script>
+</body>
+</html>

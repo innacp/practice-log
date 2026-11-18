@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Muza</title>
+  <link rel="icon" href="/favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="/favicon.svg">
+  <meta name="theme-color" content="#D100FF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/style.css">
+</head>
+<body class="user-page">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <img class="logo" src="/favicon.svg" width="34" height="34" alt="">
+        <span class="wordmark" data-i18n="brand">Muza</span>
+      </a>
+      <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
+        <a href="/" data-i18n="nav.log">Log</a>
+        <a href="/timer" data-i18n="nav.timer">Timer</a>
+        <a href="/theory" data-i18n="nav.theory">Theory</a>
+      </nav>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="uk" lang="uk">UA</button>
+      </div>
+      <a class="account-btn" href="/login" hidden>Log in</a>
+    </div>
+  </header>
+
+  <main class="wrap profile-main">
+    <p class="card admin-msg" id="u-msg" hidden></p>
+
+    <div id="u-page" hidden>
+      <section class="card profile-head">
+        <span class="avatar avatar-lg" id="u-avatar"></span>
+        <div class="profile-who">
+          <h1><span id="u-name"></span> <span class="role-badge" id="u-admin" hidden data-i18n="prof.adminBadge">Admin</span></h1>
+          <p class="muted"><span id="u-handle"></span> · <span id="u-joined"></span></p>
+          <p class="u-bio" id="u-bio"></p>
+        </div>
+        <div class="profile-head-actions">
+          <a class="ghost btn-link" id="u-edit" href="/profile" hidden data-i18n="user.edit">Edit profile</a>
+        </div>
+      </section>
+      <p class="note-private" id="u-private" hidden data-i18n="user.privateNote"></p>
+
+      <section class="card streak-card user-stats">
+        <div class="streak-stats">
+          <div><b id="u-streak">0</b><span data-i18n="user.streak">current streak</span></div>
+          <div><b id="u-longest">0</b><span data-i18n="stat.longest">longest streak</span></div>
+          <div><b id="u-days">0</b><span id="u-days-label"></span></div>
+          <div><b id="u-hours">0</b><span data-i18n="stat.hours">hours total</span></div>
+        </div>
+      </section>
+
+      <section class="card" id="year-card">
+        <div class="row">
+          <div>
+            <h2 data-i18n="year.title">The last year</h2>
+            <p class="muted" id="year-summary"></p>
+          </div>
+        </div>
+        <div class="graph-scroll"><div class="graph-box"><div id="graph"></div><div class="legend" id="legend"></div></div></div>
+        <div class="split" id="u-split"></div>
+      </section>
+    </div>
+  </main>
+
+  <div id="tip" hidden></div>
+  <script src="/i18n.js"></script>
+  <script src="/store.js"></script>
+  <script src="/user.js"></script>
+</body>
+</html>
