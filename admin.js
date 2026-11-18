@@ -45,6 +45,7 @@ async function load() {
   $('admin-lock').hidden = true;
   message('');
   $('admin-app').hidden = false;
+  $('admin-tabs').hidden = false;
   $('save-bar').hidden = false;
   current = 0;
   renderList();
@@ -383,5 +384,66 @@ $('reset-all').onclick = async () => {
   updateSaveState();
 };
 window.addEventListener('beforeunload', e => { if (lessons.length && dirty()) { e.preventDefault(); e.returnValue = ''; } });
+
+
+// ------------------------------------------------------------------ users
+let users = [];
+function showPane(pane) {
+  document.querySelectorAll('#admin-tabs button').forEach(b => {
+    const on = b.dataset.pane === pane;
+    b.classList.toggle('on', on); b.setAttribute('aria-selected', on);
+  });
+  $('admin-app').hidden = pane !== 'lessons';
+  $('save-bar').hidden = pane !== 'lessons';
+  $('admin-users').hidden = pane !== 'users';
+  if (pane === 'users') loadUsers();
+}
+document.querySelectorAll('#admin-tabs button').forEach(b => { b.onclick = () => showPane(b.dataset.pane); });
+
+async function loadUsers() {
+  $('users-count').textContent = 'Loading\u2026';
+  const r = await api('GET', null, '?action=users', '/api/admin');
+  if (r.status !== 200) { $('users-count').textContent = 'Could not load users. Try reloading the page.'; return; }
+  users = r.data.users;
+  renderUsers();
+}
+function renderUsers() {
+  const q = $('users-search').value.trim().toLowerCase();
+  const list = users.filter(u => !q || (u.name + ' ' + u.email + ' ' + u.username).toLowerCase().includes(q));
+  $('users-count').textContent = `${users.length} account${users.length === 1 ? '' : 's'}` + (q ? ` \u00b7 ${list.length} shown` : '');
+  const ul = $('users-list');
+  ul.innerHTML = '';
+  list.forEach(u => {
+    const li = el('li', 'user-row');
+    const av = el('span', 'avatar'); paintAvatar(av, u);
+    const who = el('div', 'user-who');
+    const name = el('a', null, u.name); name.href = '/u/' + u.username; name.target = '_blank'; name.rel = 'noopener';
+    who.append(name, el('span', 'muted', `${u.email} \u00b7 @${u.username} \u00b7 joined ${new Date(u.created).toLocaleDateString('en-GB', { day: 'numeric', month: 'short', year: 'numeric' })}`));
+    li.append(av, who);
+    if (u.role === 'admin') li.appendChild(el('span', 'role-badge', 'Admin'));
+    const btn = el('button', 'ghost', 'Reset password');
+    btn.type = 'button';
+    btn.onclick = async () => {
+      if (!confirm(`Give ${u.name} (${u.email}) a new temporary password? Their current password will stop working.`)) return;
+      btn.disabled = true;
+      const r = await api('POST', { id: u.id }, '?action=reset', '/api/admin');
+      btn.disabled = false;
+      if (r.status !== 200) { alert('Resetting the password failed. Try again.'); return; }
+      $('pw-who').textContent = `${u.name} (${u.email})`;
+      $('pw-value').textContent = r.data.password;
+      $('pw-copy').textContent = 'Copy';
+      $('pw-reset').hidden = false;
+      $('pw-reset').scrollIntoView({ block: 'nearest' });
+    };
+    li.appendChild(btn);
+    ul.appendChild(li);
+  });
+  if (!list.length) ul.appendChild(el('li', 'muted', 'No users match.'));
+}
+$('users-search').addEventListener('input', renderUsers);
+$('pw-copy').onclick = async () => {
+  try { await navigator.clipboard.writeText($('pw-value').textContent); $('pw-copy').textContent = 'Copied!'; }
+  catch { $('pw-copy').textContent = 'Select and copy it'; }
+};
 
 load();

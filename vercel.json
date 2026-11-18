@@ -2,5 +2,15 @@
   "cleanUrls": true,
   "rewrites": [
     { "source": "/u/:name", "destination": "/user" }
+  ],
+  "headers": [
+    {
+      "source": "/(.*)\\.(js|css|html|svg)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    },
+    {
+      "source": "/((?!api/).*)",
+      "headers": [{ "key": "Cache-Control", "value": "public, max-age=0, must-revalidate" }]
+    }
   ]
 }

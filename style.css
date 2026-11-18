@@ -1033,3 +1033,20 @@ a.ghost.btn-link { color: var(--ink); }
 .photo-msg.error { color: #A11D1D; }
 /* Public profile uses the same width as the log page, so the full year fits */
 .user-page .profile-main { max-width: 1120px; }
+
+/* Admin: Lessons / Users tabs and the user list */
+.admin-tabs { display: flex; gap: 4px; padding: 4px; border-radius: 12px; background: rgba(58, 16, 70, 0.06); align-self: flex-start; }
+.admin-tabs button { height: 36px; padding: 0 16px; border: 0; border-radius: 9px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer; }
+.admin-tabs button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 8px rgba(58, 16, 70, 0.12); }
+#users-search { height: 40px; min-width: 240px; padding: 0 12px; border: 1px solid var(--field); border-radius: 10px; font: inherit; }
+.users-list { list-style: none; margin: 0; padding: 0; }
+.user-row { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-top: 1px solid #EEEFF2; flex-wrap: wrap; }
+.user-who { flex: 1 1 260px; min-width: 0; display: flex; flex-direction: column; }
+.user-who a { color: var(--ink); font-weight: 600; text-decoration: none; }
+.user-who a:hover { color: #9C00C0; }
+.user-who .muted { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.pw-reset { margin-bottom: 14px; padding: 14px; border-radius: 12px; background: #F0FDE0; border: 1px solid rgba(174, 243, 89, 0.9); }
+.pw-reset p { margin: 0 0 8px; }
+.pw-reset .muted { margin: 8px 0 0; font-size: 13px; }
+.pw-row { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; }
+.pw-row code { font: 600 18px ui-monospace, Consolas, monospace; padding: 8px 12px; border-radius: 8px; background: #fff; border: 1px solid rgba(58, 16, 70, 0.12); user-select: all; }

@@ -19,7 +19,7 @@
         <img class="logo" src="favicon.svg" width="34" height="34" alt="">
         <span class="wordmark">Muza</span>
       </a>
-      <span class="admin-badge">Admin · Theory lessons</span>
+      <span class="admin-badge">Admin</span>
       <a class="account-btn" href="/login" hidden>Log in</a>
       <a class="link admin-view" href="/theory" target="_blank" rel="noopener">View theory page ↗</a>
     </div>
@@ -36,6 +36,29 @@
     </section>
 
     <p class="card admin-msg" id="admin-msg" hidden></p>
+
+    <!-- Lessons / Users switch -->
+    <div class="admin-tabs" id="admin-tabs" role="tablist" hidden>
+      <button type="button" role="tab" data-pane="lessons" class="on" aria-selected="true">Theory lessons</button>
+      <button type="button" role="tab" data-pane="users" aria-selected="false">Users</button>
+    </div>
+
+    <!-- Users -->
+    <section class="card admin-users" id="admin-users" hidden>
+      <div class="row">
+        <div>
+          <h2>Users</h2>
+          <p class="muted" id="users-count"></p>
+        </div>
+        <input type="search" id="users-search" placeholder="Search by name or email" aria-label="Search users">
+      </div>
+      <div class="pw-reset" id="pw-reset" hidden>
+        <p><b>New temporary password for <span id="pw-who"></span>:</b></p>
+        <div class="pw-row"><code id="pw-value"></code><button type="button" class="ghost" id="pw-copy">Copy</button></div>
+        <p class="muted">Send it to them privately (for example in a message). They log in with it and then choose their own password under <b>My profile → Password</b>. The old password no longer works.</p>
+      </div>
+      <ul class="users-list" id="users-list"></ul>
+    </section>
 
     <!-- Editor -->
     <div class="admin-layout" id="admin-app" hidden>
