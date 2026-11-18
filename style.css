@@ -804,3 +804,10 @@ h2 { font-size: 19px; }
 /* Cleaner header: no date, and the status badge only appears when something went wrong */
 #today { display: none !important; }
 #sync:not(.err) { display: none !important; }
+
+/* Wordmark as a logo: rounded lowercase "muza" / "муза" */
+.wordmark {
+  font: 700 25px/1 "Comfortaa", "Space Grotesk", sans-serif;
+  text-transform: lowercase; letter-spacing: -0.03em;
+  color: #B000D9; padding-bottom: 2px;
+}
