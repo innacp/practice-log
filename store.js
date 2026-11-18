@@ -14,13 +14,11 @@ const INSTRUMENTS = [
   { id: 'guitar',  color: '#38B6FF', en: ['Guitar', 'guitar'],   uk: ['Гітара', 'гітара'] },
   { id: 'bass',    color: '#FFC93C', en: ['Bass', 'bass'],       uk: ['Бас-гітара', 'бас-гітара'] },
   { id: 'piano',   color: '#7B61FF', en: ['Piano', 'piano'],     uk: ['Фортепіано', 'фортепіано'] },
-  { id: 'violin',  color: '#FF5C8A', en: ['Violin', 'violin'],   uk: ['Скрипка', 'скрипка'] },
-  { id: 'ukulele', color: '#22C3A6', en: ['Ukulele', 'ukulele'], uk: ['Укулеле', 'укулеле'] },
-  { id: 'other',   color: '#9AA0AC', en: ['Other', 'other'],     uk: ['Інше', 'інше'] },
 ];
 const INSTR = Object.fromEntries(INSTRUMENTS.map(i => [i.id, i]));
 const DEFAULT_INSTRUMENTS = ['drums', 'vocals'];
-const instr = id => INSTR[id] || INSTR.other;
+const UNKNOWN_INSTR = { id: 'unknown', color: '#9AA0AC', en: ['Other', 'other'], uk: ['Інше', 'інше'] };
+const instr = id => INSTR[id] || UNKNOWN_INSTR;
 const instrName = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][0];   // "Guitar" / "Гітара"
 const instrLower = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][1];  // "guitar" / "гітара"
 const instrColor = id => instr(id).color;
