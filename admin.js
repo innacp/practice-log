@@ -31,6 +31,7 @@ async function load() {
     return;
   }
   if (r.status !== 200 || !r.data) { message('Could not load lessons. Try reloading the page.', 'err'); return; }
+  setOwner(!!r.data.admin);
   if (!r.data.admin) {
     $('admin-app').hidden = true;
     $('save-bar').hidden = true;

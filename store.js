@@ -20,7 +20,15 @@ function saveSettingsLocal(s) {
 }
 
 function getPass() { try { return localStorage.getItem(PASS_KEY) || ''; } catch { return ''; } }
-function setPass(p) { try { p ? localStorage.setItem(PASS_KEY, p) : localStorage.removeItem(PASS_KEY); } catch {} }
+function setPass(p) { try { p ? localStorage.setItem(PASS_KEY, p) : localStorage.removeItem(PASS_KEY); } catch {} if (!p) setOwner(false); }
+
+// The admin gear in the header is only shown on devices where the right passcode was entered.
+const OWNER_KEY = 'practice-log-owner';
+function setOwner(on) {
+  try { on ? localStorage.setItem(OWNER_KEY, '1') : localStorage.removeItem(OWNER_KEY); } catch {}
+  document.querySelectorAll('.admin-link').forEach(a => { a.hidden = !on; });
+}
+try { setOwner(localStorage.getItem(OWNER_KEY) === '1'); } catch { setOwner(false); }
 
 // Calls the online API. Returns { status, data }; status 0 means offline.
 async function api(method, body, query = '', path = '/api/sessions') {

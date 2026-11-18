@@ -43,6 +43,7 @@ async function connect() {
 
   if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
     cloud = true;
+    setOwner(true);
     const remote = res.data.sessions;
     const remoteIds = new Set(remote.map(s => s.id));
     const localOnly = sessions.filter(s => !remoteIds.has(s.id));
@@ -68,6 +69,7 @@ async function connect() {
 
   if (res.status === 401) {
     cloud = false;
+    setOwner(false);
     showLocked(getPass() ? 'unlock.wrong' : '');
     return;
   }
