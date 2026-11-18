@@ -811,3 +811,97 @@ h2 { font-size: 19px; }
   text-transform: lowercase; letter-spacing: -0.03em;
   color: #B000D9; padding-bottom: 2px;
 }
+
+/* =========================================================
+   Admin panel
+   ========================================================= */
+.admin-page { padding-bottom: 80px; }
+.admin-badge { font-size: 13px; font-weight: 600; color: var(--muted); padding: 4px 10px; border-radius: 999px; background: rgba(58, 16, 70, 0.06); }
+.admin-view { margin-left: auto; text-decoration: none; }
+.admin-main { max-width: 1240px; }
+.admin-msg { margin: 0; }
+.admin-msg.warn { background: #FFF4DB; color: #7A4B00; border-color: #F3D99A; }
+.admin-msg.err { background: #FDE8E8; color: #A11D1D; border-color: #F3B4B4; }
+.admin-layout { display: grid; grid-template-columns: 290px minmax(0, 1fr); gap: 20px; align-items: start; }
+.admin-list { padding: 16px; position: sticky; top: 84px; max-height: calc(100vh - 180px); overflow: auto; }
+.admin-list-head { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 8px; }
+.admin-list-head .muted { margin: 0; font-size: 12px; }
+.al-group { margin-top: 12px; }
+.al-head { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; font-size: 14px; }
+.al-head .level-badge { width: 24px; height: 24px; border-radius: 7px; font-size: 12px; }
+.al-item {
+  width: 100%; display: flex; gap: 8px; align-items: baseline; text-align: left; padding: 7px 8px; border: 0; border-radius: 8px;
+  background: transparent; color: var(--ink); cursor: pointer; font-size: 14px;
+}
+.al-item:hover { background: rgba(58, 16, 70, 0.05); }
+.al-item.on { background: rgba(200, 0, 245, 0.1); color: #7A00A0; font-weight: 600; }
+.al-num { color: var(--muted); font-size: 12px; min-width: 18px; }
+.al-add { margin: 4px 0 0 8px; border: 0; background: none; color: #9C00C0; font-weight: 600; font-size: 13px; cursor: pointer; padding: 4px 0; }
+
+.admin-editor { display: flex; flex-direction: column; gap: 14px; }
+.ed-top { display: flex; justify-content: space-between; align-items: flex-end; gap: 16px; flex-wrap: wrap; }
+.ed-fields { display: flex; gap: 12px; flex-wrap: wrap; }
+.admin-editor label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); }
+.admin-editor input[type="text"], .admin-editor input[type="number"] {
+  height: 40px; padding: 0 12px; border: 1px solid var(--field); border-radius: 10px; color: var(--ink); background: #fff; font: inherit;
+}
+#f-mins { width: 90px; }
+#f-id { width: 200px; }
+.ed-title-label input { height: 46px !important; font: 600 18px "Space Grotesk", sans-serif !important; }
+.ed-lang { display: flex; gap: 4px; padding: 4px; border-radius: 10px; background: rgba(58, 16, 70, 0.06); }
+.ed-lang button { height: 34px; padding: 0 14px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); font-weight: 600; cursor: pointer; }
+.ed-lang button.on { background: #fff; color: var(--ink); box-shadow: 0 2px 6px rgba(58, 16, 70, 0.14); }
+
+.ed-toolbar {
+  display: flex; flex-wrap: wrap; gap: 4px; align-items: center; padding: 6px; border-radius: 12px;
+  background: rgba(58, 16, 70, 0.04); border: 1px solid rgba(58, 16, 70, 0.08); position: sticky; top: 72px; z-index: 3;
+}
+.ed-toolbar button { height: 34px; padding: 0 10px; border: 1px solid transparent; border-radius: 8px; background: transparent; color: var(--ink); cursor: pointer; font-size: 13px; }
+.ed-toolbar button:hover { background: #fff; border-color: var(--field); }
+.ed-toolbar button.on { background: var(--ink); color: #fff; }
+.ed-toolbar .sep { width: 1px; height: 22px; background: rgba(58, 16, 70, 0.12); margin: 0 4px; }
+.ed-body {
+  min-height: 420px; padding: 18px 20px; border: 1px solid var(--field); border-radius: 12px; background: #fff; line-height: 1.65; outline: none;
+}
+.ed-body:focus { border-color: #B65CFF; box-shadow: 0 0 0 4px rgba(209, 0, 255, 0.1); }
+.ed-body h3 { font: 600 17px "Space Grotesk", sans-serif; margin: 18px 0 6px; }
+.ed-body p { margin: 0 0 12px; }
+.ed-html { min-height: 420px; padding: 14px; border: 1px solid var(--field); border-radius: 12px; font: 13px/1.5 ui-monospace, Consolas, monospace; resize: vertical; }
+.w-chip {
+  display: block; margin: 8px 0 14px; padding: 12px 14px; border-radius: 12px; cursor: pointer; user-select: none;
+  background: repeating-linear-gradient(90deg, #fff 0 18px, #F3EEF7 18px 20px); border: 1px dashed #C9A6E8;
+  font-weight: 600; font-size: 14px; color: #6E0088;
+}
+.w-chip:hover { border-color: #C800F5; background: #FBF2FE; }
+.ed-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.danger { color: #A11D1D !important; }
+.ghost.danger:hover { border-color: #F3B4B4; }
+
+.save-bar {
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: flex; align-items: center; justify-content: space-between; gap: 12px; flex-wrap: wrap;
+  padding: 12px max(16px, calc((100vw - 1240px) / 2 + 24px)); background: rgba(255, 255, 255, 0.95);
+  border-top: 1px solid rgba(58, 16, 70, 0.1); box-shadow: 0 -8px 24px -16px rgba(58, 16, 70, 0.3);
+}
+#save-state { font-weight: 600; color: #1D6B3A; }
+#save-state.dirty { color: #7A4B00; }
+.save-actions { display: flex; gap: 10px; align-items: center; }
+.save-bar .primary { padding: 0 22px; }
+.save-bar button:disabled { opacity: 0.45; cursor: default; }
+
+.w-dialog { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100vw - 32px)); box-shadow: 0 30px 80px -20px rgba(58, 16, 70, 0.45); }
+.w-dialog::backdrop { background: rgba(22, 24, 29, 0.35); }
+.w-dialog form { padding: 22px; display: flex; flex-direction: column; gap: 14px; }
+.w-dialog h2 { margin: 0; }
+.w-dialog label { display: flex; flex-direction: column; gap: 5px; font-size: 13px; color: var(--muted); margin-bottom: 10px; }
+.w-dialog input { height: 42px; padding: 0 12px; border: 1px solid var(--field); border-radius: 10px; font: inherit; color: var(--ink); }
+.w-dialog .hint { font-size: 12px; }
+.w-dialog code { background: rgba(58, 16, 70, 0.06); padding: 1px 5px; border-radius: 5px; font-size: 12px; }
+.w-actions { display: flex; gap: 8px; align-items: center; }
+.w-actions .spacer { flex: 1; }
+.w-preview:empty { display: none; }
+
+@media (max-width: 860px) {
+  .admin-layout { grid-template-columns: 1fr; }
+  .admin-list { position: static; max-height: none; }
+  .admin-view { display: none; }
+}

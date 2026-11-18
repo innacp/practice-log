@@ -23,3 +23,11 @@ Setup in the Vercel dashboard:
 3. **Deployments** → latest → **Redeploy**.
 
 Hosted on Vercel: every push to `main` redeploys automatically.
+
+## Editing the theory lessons
+
+Open `/admin` on the live site and sign in with the same passcode (`PRACTICE_PASSCODE`).
+Edit any lesson in English and Ukrainian with the visual editor, insert playable piano
+examples or a metronome, add / reorder / delete lessons, then press **Save & publish**.
+Edits are stored in the online database (`/api/lessons`); "Reset all to original" brings
+back the built-in lessons from `lessons-1/2/3.js`.

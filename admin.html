@@ -1,0 +1,169 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="robots" content="noindex">
+  <title>Admin · Muza</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <meta name="theme-color" content="#D100FF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body class="admin-page">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <img class="logo" src="favicon.svg" width="34" height="34" alt="">
+        <span class="wordmark">Muza</span>
+      </a>
+      <span class="admin-badge">Admin · Theory lessons</span>
+      <a class="link admin-view" href="/theory" target="_blank" rel="noopener">View theory page ↗</a>
+    </div>
+  </header>
+
+  <main class="wrap admin-main">
+    <!-- Passcode -->
+    <form class="card unlock" id="admin-lock" hidden>
+      <div>
+        <h2>Admin sign-in</h2>
+        <p class="muted">Enter the same passcode you use to unlock your log.</p>
+      </div>
+      <div class="unlock-row">
+        <label class="sr-only" for="admin-pass">Passcode</label>
+        <input type="password" id="admin-pass" autocomplete="current-password" placeholder="Passcode" required>
+        <button type="submit" class="primary">Open admin</button>
+      </div>
+      <p class="error" id="admin-lock-error" role="alert" hidden></p>
+    </form>
+
+    <p class="card admin-msg" id="admin-msg" hidden></p>
+
+    <!-- Editor -->
+    <div class="admin-layout" id="admin-app" hidden>
+      <aside class="card admin-list">
+        <div class="admin-list-head">
+          <h2>Lessons</h2>
+          <span class="muted" id="lesson-count"></span>
+        </div>
+        <div id="lesson-list"></div>
+      </aside>
+
+      <section class="card admin-editor" id="editor">
+        <div class="ed-top">
+          <div class="ed-fields">
+            <label>Level
+              <select class="field" id="f-level">
+                <option value="beginner">Beginner</option>
+                <option value="intermediate">Intermediate</option>
+                <option value="advanced">Advanced</option>
+              </select>
+            </label>
+            <label>Minutes to read
+              <input type="number" id="f-mins" min="1" max="120">
+            </label>
+            <label>Link name (id)
+              <input type="text" id="f-id" pattern="[a-z0-9-]+" title="Lowercase letters, numbers and dashes">
+            </label>
+          </div>
+          <div class="ed-lang" role="tablist" aria-label="Language">
+            <button type="button" role="tab" data-edlang="en" class="on">English</button>
+            <button type="button" role="tab" data-edlang="uk">Українська</button>
+          </div>
+        </div>
+
+        <label class="ed-title-label">Title
+          <input type="text" id="f-title" maxlength="200">
+        </label>
+
+        <div class="ed-toolbar" role="toolbar" aria-label="Formatting">
+          <button type="button" data-cmd="h3" title="Section heading">Heading</button>
+          <button type="button" data-cmd="p" title="Normal paragraph">Text</button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="bold" title="Bold"><b>B</b></button>
+          <button type="button" data-cmd="italic" title="Italic"><i>I</i></button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="ul" title="Bullet list">• List</button>
+          <button type="button" data-cmd="ol" title="Numbered list">1. List</button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="tip" title="Pink tip box">Tip box</button>
+          <button type="button" data-cmd="keyidea" title="Green key idea box">Key idea</button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="piano" title="Insert a playable keyboard">🎹 Piano</button>
+          <button type="button" data-cmd="metro" title="Insert a metronome">⏱ Metronome</button>
+          <span class="sep"></span>
+          <button type="button" data-cmd="html" id="html-toggle" title="Edit the raw HTML">&lt;/&gt; HTML</button>
+        </div>
+        <div class="ed-body" id="f-body" contenteditable="true" spellcheck="true"></div>
+        <textarea class="ed-html" id="f-html" hidden spellcheck="false"></textarea>
+
+        <div class="ed-actions">
+          <button type="button" class="ghost" id="move-up" title="Move up within its level">↑ Up</button>
+          <button type="button" class="ghost" id="move-down" title="Move down within its level">↓ Down</button>
+          <button type="button" class="ghost danger" id="delete-lesson">Delete lesson</button>
+        </div>
+      </section>
+    </div>
+  </main>
+
+  <!-- Sticky save bar -->
+  <div class="save-bar" id="save-bar" hidden>
+    <span id="save-state">All changes saved</span>
+    <div class="save-actions">
+      <button type="button" class="link" id="reset-all">Reset all to original</button>
+      <button type="button" class="ghost" id="discard">Discard changes</button>
+      <button type="button" class="primary" id="save">Save &amp; publish</button>
+    </div>
+  </div>
+
+  <!-- Piano / metronome dialog -->
+  <dialog class="w-dialog" id="w-dialog">
+    <form method="dialog" id="w-form">
+      <h2 id="w-title">Piano example</h2>
+      <div id="w-piano-fields">
+        <label>Notes <span class="hint">e.g. <code>C4 E4 G4</code>. Separate chords or groups with <code>|</code>: <code>C4 E4 G4 | F4 A4 C5</code>. Sharps <code>F#4</code>, flats <code>Bb3</code>.</span>
+          <input type="text" id="w-notes" required>
+        </label>
+        <label>How Play works
+          <select class="field" id="w-mode">
+            <option value="seq">Notes one by one (scale, melody)</option>
+            <option value="chord">Each group together (chords)</option>
+            <option value="both">One by one, then all together</option>
+            <option value="prog">Chord after chord (progression)</option>
+          </select>
+        </label>
+        <label>Labels under the keys <span class="hint">optional, one per note of the first group, e.g. <code>1 3 5</code></span>
+          <input type="text" id="w-labels">
+        </label>
+        <label>Caption <span class="hint">optional, shown next to the Play button</span>
+          <input type="text" id="w-caption">
+        </label>
+      </div>
+      <div id="w-metro-fields" hidden>
+        <label>Starting tempo (BPM)
+          <select class="field" id="w-bpm"><option>60</option><option selected>90</option><option>120</option></select>
+        </label>
+        <label>Beats per bar
+          <input type="number" id="w-beats" min="2" max="12" value="4">
+        </label>
+      </div>
+      <div class="w-preview" id="w-preview"></div>
+      <div class="w-actions">
+        <button type="button" class="ghost danger" id="w-remove">Remove</button>
+        <span class="spacer"></span>
+        <button type="button" class="ghost" id="w-cancel">Cancel</button>
+        <button type="submit" class="primary" id="w-ok">Insert</button>
+      </div>
+    </form>
+  </dialog>
+
+  <script src="i18n.js"></script>
+  <script src="store.js"></script>
+  <script src="lessons-1.js"></script>
+  <script src="lessons-2.js"></script>
+  <script src="lessons-3.js"></script>
+  <script src="admin.js"></script>
+</body>
+</html>

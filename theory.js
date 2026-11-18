@@ -1,6 +1,20 @@
 // Theory page: renders the lessons from lessons.js, the interactive piano,
 // the metronome, level filters and "done" ticks (saved in this browser).
 const DONE_KEY = 'practice-log-theory-done';
+const LESSONS_CACHE = 'practice-log-lessons-cache';
+
+// Lessons: edits saved in the admin panel win; otherwise the built-in lessons-1/2/3.js.
+// The last downloaded version is cached so the page doesn't flash the old text first.
+let lessonData = (() => {
+  try { const c = JSON.parse(localStorage.getItem(LESSONS_CACHE)); if (Array.isArray(c) && c.length) return c; } catch {}
+  return window.LESSONS;
+})();
+fetch('/api/lessons').then(r => (r.ok ? r.json() : null)).then(d => {
+  if (!d) return;
+  const next = Array.isArray(d.lessons) && d.lessons.length ? d.lessons : window.LESSONS;
+  try { d.lessons ? localStorage.setItem(LESSONS_CACHE, JSON.stringify(d.lessons)) : localStorage.removeItem(LESSONS_CACHE); } catch {}
+  if (JSON.stringify(next) !== JSON.stringify(lessonData)) { lessonData = next; render(); }
+}).catch(() => {});
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
 
 function loadDone() { try { return new Set(JSON.parse(localStorage.getItem(DONE_KEY)) || []); } catch { return new Set(); } }
@@ -218,7 +232,7 @@ function render() {
   list.innerHTML = '';
   let num = 0;
   LEVELS.forEach((level, li) => {
-    const lessons = LESSONS.filter(l => l.level === level);
+    const lessons = lessonData.filter(l => l.level === level);
     const doneN = lessons.filter(l => done.has(l.id)).length;
     const hidden = filter !== 'all' && filter !== level;
 
@@ -269,7 +283,7 @@ function render() {
     });
   });
 
-  const total = LESSONS.length, n = LESSONS.filter(l => done.has(l.id)).length;
+  const total = lessonData.length, n = lessonData.filter(l => done.has(l.id)).length;
   document.getElementById('lp-fill').style.width = (n / total * 100) + '%';
   document.getElementById('lp-text').textContent = n === total ? t('theory.allDone', { n }) : t('theory.progress', { n, total });
 }

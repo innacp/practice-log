@@ -16,12 +16,16 @@ export async function redis(...command) {
 }
 
 // Compare hashes so the check takes the same time whatever was typed
-function passcodeOk(given) {
+export function passcodeOk(given) {
   const PASSCODE = process.env.PRACTICE_PASSCODE;
-  if (typeof given !== 'string' || !given) return false;
+  if (!PASSCODE || typeof given !== 'string' || !given) return false;
   const a = createHash('sha256').update(given).digest();
   const b = createHash('sha256').update(PASSCODE).digest();
   return timingSafeEqual(a, b);
+}
+
+export function configured() {
+  return !!(REDIS_URL && REDIS_TOKEN && process.env.PRACTICE_PASSCODE);
 }
 
 // Returns true when the request may continue; otherwise it has already answered.
