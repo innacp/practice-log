@@ -12,12 +12,6 @@ function show(mode) {
 }
 document.querySelectorAll('[data-go]').forEach(b => b.onclick = () => show(b.dataset.go));
 
-function showError(form, code) {
-  const p = form.querySelector('.error');
-  const key = 'err.' + code;
-  p.textContent = t(key) === key ? t('err.generic') : t(key);
-  p.hidden = false;
-}
 function busy(form, on) {
   form.querySelectorAll('button[type=submit]').forEach(b => { b.disabled = on; });
   if (on) form.querySelector('.error').hidden = true;

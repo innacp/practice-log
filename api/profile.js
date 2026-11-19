@@ -2,7 +2,7 @@
 // Profile photo:  GET /api/profile?u=<username>&avatar=<version>  (the image itself, cached)
 // Returns the name, bio, join date and minutes practised per day, per instrument.
 // Notes are never shared. Private profiles are only visible to their owner.
-import { redis, pairs, begin, loadUser } from './_lib.js';
+import { redis, pairs, begin, loadUser, loadSessions } from './_lib.js';
 import { INSTRUMENT_IDS } from './_instruments.js';
 
 export default async function handler(req, res) {
@@ -28,23 +28,27 @@ export default async function handler(req, res) {
       return res.status(200).send(Buffer.from(base64, 'base64'));
     }
 
+    const [sessions, followersFlat, followingFlat, settingsJson] = await Promise.all([
+      loadSessions(user.id),
+      redis('HGETALL', 'followers:' + user.id),
+      redis('HGETALL', 'following:' + user.id),
+      redis('GET', 'settings:' + user.id),
+    ]);
     // minutes per day, split by instrument
-    const flat = (await redis('HGETALL', 'sessions:' + user.id)) || [];
     const days = {};
-    for (let i = 1; i < flat.length; i += 2) {
-      let s; try { s = JSON.parse(flat[i]); } catch { continue; }
+    for (const s of sessions) {
       if (!s || !s.date || !INSTRUMENT_IDS.has(s.type)) continue;
       const d = days[s.date] || (days[s.date] = {});
       d[s.type] = (d[s.type] || 0) + (Number(s.minutes) || 0);
     }
-    const followers = pairs(await redis('HGETALL', 'followers:' + user.id));
-    const following = pairs(await redis('HGETALL', 'following:' + user.id));
+    const followers = pairs(followersFlat);
+    const following = pairs(followingFlat);
     const follow = {
       followers: Object.keys(followers).length, following: Object.keys(following).length,
       youFollow: !!viewer.id && viewer.id in followers, followsYou: !!viewer.id && viewer.id in following,
     };
     let instruments = null;
-    try { instruments = (JSON.parse(await redis('GET', 'settings:' + user.id)) || {}).instruments || null; } catch {}
+    try { instruments = (JSON.parse(settingsJson) || {}).instruments || null; } catch {}
     return res.status(200).json({
       instruments, follow,
       profile: {

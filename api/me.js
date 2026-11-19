@@ -69,12 +69,13 @@ export default async function handler(req, res) {
       if (!(await checkPassword(String(b.password || ''), me.pass))) return res.status(403).json({ error: 'wrong-password' });
       if (me.role === 'admin') return res.status(400).json({ error: 'admin-cannot-delete' });
       // Take this account out of everyone's following / followers lists
-      const following = (await redis('HGETALL', 'following:' + me.id)) || [];
-      const followers = (await redis('HGETALL', 'followers:' + me.id)) || [];
-      for (let i = 0; i < following.length; i += 2) await redis('HDEL', 'followers:' + following[i], me.id);
-      for (let i = 0; i < followers.length; i += 2) await redis('HDEL', 'following:' + followers[i], me.id);
-      await redis('DEL', 'following:' + me.id, 'followers:' + me.id);
-      await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'avatar:' + me.id, 'email:' + me.email, 'uname:' + me.username);
+      const [following, followers] = await Promise.all([redis('HKEYS', 'following:' + me.id), redis('HKEYS', 'followers:' + me.id)]);
+      await Promise.all([
+        ...(following || []).map(id => redis('HDEL', 'followers:' + id, me.id)),
+        ...(followers || []).map(id => redis('HDEL', 'following:' + id, me.id)),
+      ]);
+      await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'avatar:' + me.id,
+        'email:' + me.email, 'uname:' + me.username, 'following:' + me.id, 'followers:' + me.id);
       await endSession(req, res);
       return res.status(200).json({ deleted: true });
     }

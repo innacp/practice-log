@@ -84,6 +84,16 @@ export async function endSession(req, res) {
   res.setHeader('Set-Cookie', `${COOKIE}=; Path=/; HttpOnly; Secure; SameSite=Lax; Max-Age=0`);
 }
 
+// A person's practice sessions, parsed (entries that fail to parse are skipped)
+export async function loadSessions(id) {
+  const flat = (await redis('HGETALL', 'sessions:' + id)) || [];
+  const list = [];
+  for (let i = 1; i < flat.length; i += 2) {
+    try { list.push(JSON.parse(flat[i])); } catch {}
+  }
+  return list;
+}
+
 export async function loadUser(id) {
   if (!id) return null;
   const u = pairs(await redis('HGETALL', 'user:' + id));

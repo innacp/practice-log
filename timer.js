@@ -20,7 +20,6 @@ function fmtClock(ms) {
   return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
 }
 
-const $ = id => document.getElementById(id);
 const fill = $('dial-fill');
 fill.style.strokeDasharray = CIRC;
 
@@ -69,7 +68,7 @@ function syncControls() {
 
 let raf;
 function loop() { draw(); raf = requestAnimationFrame(loop); }
-setInterval(draw, 500); // keeps the tab title ticking when the page is in the background
+setInterval(() => { if (document.hidden) draw(); }, 500); // keeps the tab title ticking in the background
 
 // ---------- Sound + screen ----------
 let audio;

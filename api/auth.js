@@ -38,10 +38,9 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET') {
-      const claimed = await redis('EXISTS', OWNER_KEY);
       return res.status(200).json({
         user: me.id ? publicUser(me) : null,
-        ownerClaimable: !claimed && !!process.env.PRACTICE_PASSCODE,
+        ownerClaimable: !!process.env.PRACTICE_PASSCODE && !(await redis('EXISTS', OWNER_KEY)),
         emailReset: !!process.env.RESEND_API_KEY,
       });
     }

@@ -1,24 +1,10 @@
 // Public profile page: /u/<username> (or /user?u=<username>)
-const $ = id => document.getElementById(id);
 const uname = (location.pathname.match(/^\/u\/([^/]+)/) || [])[1] || new URLSearchParams(location.search).get('u') || '';
 const SCALE = ALL_SCALE;
 let profile = null, days = {}, chosen = null, follow = null;
 
-function level(min) { return !min ? 0 : min <= 15 ? 1 : min <= 30 ? 2 : min < 60 ? 3 : 4; }
 const total = d => (d ? Object.values(d).reduce((a, b) => a + b, 0) : 0);
 
-function streaks() {
-  let current = 0, longest = 0, run = 0, prev = null;
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  if (!total(days[iso(d)])) d.setDate(d.getDate() - 1);
-  while (total(days[iso(d)])) { current++; d.setDate(d.getDate() - 1); }
-  for (const k of Object.keys(days).filter(k => total(days[k])).sort()) {
-    const t0 = new Date(k + 'T00:00');
-    run = prev && Math.round((t0 - prev) / 86400000) === 1 ? run + 1 : 1;
-    longest = Math.max(longest, run); prev = t0;
-  }
-  return { current, longest };
-}
 
 function render() {
   if (!profile) return;
@@ -34,7 +20,7 @@ function render() {
   $('u-private').hidden = !(profile.own && !profile.public);
   renderFollow();
 
-  const { current, longest } = streaks();
+  const { current, longest } = streaks(Object.fromEntries(Object.entries(days).map(([k, d]) => [k, total(d)])));
   const practised = Object.keys(days).filter(k => total(days[k]));
   const per = {};
   Object.values(days).forEach(d => Object.entries(d).forEach(([id, m]) => { per[id] = (per[id] || 0) + m; }));
@@ -45,7 +31,7 @@ function render() {
   $('u-days-label').textContent = plural(practised.length, 'recap.daysWord');
   $('u-hours').textContent = +(sumAll / 60).toFixed(1);
 
-  // Year graph (same look as the log page)
+  // Year graph (same look as the practice page)
   const graph = $('graph');
   graph.innerHTML = '';
   const end = new Date(); end.setHours(0, 0, 0, 0);
@@ -101,16 +87,7 @@ function render() {
   }
 }
 
-// Tooltip on the squares
-const tip = $('tip');
-$('graph').addEventListener('mousemove', e => {
-  const c = e.target.closest('.cells .cell');
-  if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
-  tip.textContent = c.dataset.tip; tip.hidden = false;
-  tip.style.left = Math.min(e.clientX + 10, innerWidth - tip.offsetWidth - 8) + 'px';
-  tip.style.top = (e.clientY - 32) + 'px';
-});
-$('graph').addEventListener('mouseleave', () => { tip.hidden = true; });
+attachGraphTip($('graph'));
 
 // Followers / following counts and the Follow button
 function renderFollow() {

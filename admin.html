@@ -28,7 +28,7 @@
 
   <main class="wrap admin-main">
     <!-- Not signed in as admin -->
-    <section class="card unlock" id="admin-lock" hidden>
+    <section class="card admin-lock" id="admin-lock" hidden>
       <div>
         <h2>Admin sign-in</h2>
         <p class="muted" id="admin-lock-text">Log in with the admin account to edit the theory lessons.</p>
@@ -55,7 +55,7 @@
       </div>
       <div class="pw-reset" id="pw-reset" hidden>
         <p><b>New temporary password for <span id="pw-who"></span>:</b></p>
-        <div class="pw-row"><code id="pw-value"></code><button type="button" class="ghost" id="pw-copy">Copy</button></div>
+        <div class="pwreset-row"><code id="pw-value"></code><button type="button" class="ghost" id="pw-copy">Copy</button></div>
         <p class="muted">Send it to them privately (for example in a message). They log in with it and then choose their own password under <b>My profile → Password</b>. The old password no longer works.</p>
       </div>
       <ul class="users-list" id="users-list"></ul>

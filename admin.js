@@ -1,7 +1,6 @@
 // Admin panel for the theory lessons.
 // Loads the saved lessons (or the built-in ones), lets you edit them visually in
 // English and Ukrainian, and saves the whole list to /api/lessons (admin account only).
-const $ = id => document.getElementById(id);
 const LEVELS = ['beginner', 'intermediate', 'advanced'];
 const LEVEL_NAMES = { beginner: 'Beginner', intermediate: 'Intermediate', advanced: 'Advanced' };
 const clone = x => JSON.parse(JSON.stringify(x));

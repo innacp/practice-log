@@ -3,7 +3,7 @@
 //   POST   /api/sessions          -> add one session, or an array of sessions (import)
 //   DELETE /api/sessions?id=...   -> delete one session
 // Every request needs a signed-in user; each user has their own list.
-import { redis, begin, readBody } from './_lib.js';
+import { redis, begin, readBody, loadSessions } from './_lib.js';
 import { INSTRUMENT_IDS } from './_instruments.js';
 
 function clean(s) {
@@ -29,14 +29,7 @@ export default async function handler(req, res) {
   const KEY = 'sessions:' + me.id;
 
   try {
-    if (req.method === 'GET') {
-      const flat = (await redis('HGETALL', KEY)) || [];
-      const sessions = [];
-      for (let i = 1; i < flat.length; i += 2) {
-        try { sessions.push(JSON.parse(flat[i])); } catch {}
-      }
-      return res.status(200).json({ sessions });
-    }
+    if (req.method === 'GET') return res.status(200).json({ sessions: await loadSessions(me.id) });
 
     if (req.method === 'POST') {
       const body = readBody(req);

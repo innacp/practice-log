@@ -1,4 +1,4 @@
-// Shared by the log page and the timer page: local cache, online API and small helpers.
+// Shared by every page: local cache, online API, instruments and small helpers.
 const KEY = 'practice-log-v1';
 const SETTINGS_KEY = 'practice-log-settings';
 const monthShort = i => t('months')[i];
@@ -23,12 +23,6 @@ const instrName = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][0];   // "Guitar"
 const instrLower = id => instr(id)[LANG === 'uk' ? 'uk' : 'en'][1];  // "guitar" / "гітара"
 const instrColor = id => instr(id).color;
 
-// Blend two #rrggbb colours: w = share of b
-function mixHex(a, b, w) {
-  const p = h => [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16));
-  const [x, y] = [p(a), p(b)];
-  return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * w).toString(16).padStart(2, '0')).join('');
-}
 // Graph shades come from CSS variables so they follow the light / dark theme
 const ALL_SCALE = ['var(--cell-empty)', 'var(--all-1)', 'var(--all-2)', 'var(--all-3)', 'var(--all-4)'];
 // Five graph shades for an instrument: empty, light … dark
@@ -38,6 +32,8 @@ function instrScale(id) {
   return ['var(--cell-empty)', mix(28), mix(58), c, `color-mix(in srgb, ${c} 72%, var(--cell-deep))`];
 }
 const scaleFor = type => (type === 'all' ? ALL_SCALE : instrScale(type));
+// Minutes in a day -> graph shade 0 (none) … 4 (an hour or more)
+const level = min => (!min ? 0 : min <= 15 ? 1 : min <= 30 ? 2 : min < 60 ? 3 : 4);
 // Pale tag background with dark, readable text in the same hue
 function instrTagStyle(id) {
   const c = instrColor(id);
@@ -187,9 +183,48 @@ document.addEventListener('langchange', renderAccountButton);
 const pad = n => String(n).padStart(2, '0');
 const iso = d => `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
 const today = () => iso(new Date());
+const $ = id => document.getElementById(id);
 const el = (tag, cls, text) => { const e = document.createElement(tag); if (cls) e.className = cls; if (text != null) e.textContent = text; return e; };
 const newId = () => (crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()));
 const reducedMotion = () => window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Current and longest run of days with practice. byDay = { "2026-11-18": minutes }.
+// Not having practised yet today doesn't break the current streak.
+function streaks(byDay) {
+  let current = 0, longest = 0, run = 0, prev = null;
+  const d = new Date(); d.setHours(0, 0, 0, 0);
+  if (!byDay[iso(d)]) d.setDate(d.getDate() - 1);
+  while (byDay[iso(d)]) { current++; d.setDate(d.getDate() - 1); }
+  for (const k of Object.keys(byDay).filter(k => byDay[k]).sort()) {
+    const day = new Date(k + 'T00:00');
+    run = prev && Math.round((day - prev) / 86400000) === 1 ? run + 1 : 1;
+    longest = Math.max(longest, run);
+    prev = day;
+  }
+  return { current, longest };
+}
+
+// Tooltip that follows the mouse over a year graph's squares (text from data-tip)
+function attachGraphTip(graph) {
+  const tip = $('tip');
+  graph.addEventListener('mousemove', e => {
+    const c = e.target.closest('.cells .cell');
+    if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
+    tip.textContent = c.dataset.tip;
+    tip.hidden = false;
+    tip.style.left = Math.min(e.clientX + 10, innerWidth - tip.offsetWidth - 8) + 'px';
+    tip.style.top = (e.clientY - 32) + 'px';
+  });
+  graph.addEventListener('mouseleave', () => { tip.hidden = true; });
+}
+
+// Show an API error code under a form, in the current language
+function showError(form, code) {
+  const p = form.querySelector('.error');
+  const key = 'err.' + code;
+  p.textContent = t(key) === key ? t('err.generic') : t(key);
+  p.hidden = false;
+}
 
 // 135 -> "2h 15m" (en) or "2 год 15 хв" (uk)
 function fmtMin(min) {

@@ -40,6 +40,8 @@ async function connect() {
     return;
   }
 
+  // Both requests start at once; settings are used only after the sessions are in
+  const settingsReq = api('GET', null, '', '/api/settings');
   const res = await api('GET');
   if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
     cloud = true;
@@ -56,7 +58,7 @@ async function connect() {
     sessions = remote.concat(localOnly);
     save();
     // Weekly goal lives online too
-    const st = await api('GET', null, '', '/api/settings');
+    const st = await settingsReq;
     if (st.status === 200 && st.data && st.data.settings && (st.data.settings.weeklyGoal || st.data.settings.instruments)) {
       settings = { ...settings, ...st.data.settings };
       saveSettingsLocal(settings);
@@ -99,8 +101,6 @@ async function cloudDelete(id) {
   setSync(r.status === 200 ? 'sync.ok' : 'sync.delfail', r.status === 200 ? 'ok' : 'err');
 }
 
-const typeName = instrName;    // "Guitar" / "Гітара"
-const typeLower = instrLower;  // "guitar" / "гітара"
 // Instruments to show: the ones you chose, plus any you logged earlier
 function shownInstruments() {
   const mine = myInstruments(settings);
@@ -108,7 +108,7 @@ function shownInstruments() {
   return mine.concat(used);
 }
 // Label used in the graph tooltip ("30 min guitar" / "Гітара: 30 хв")
-const tipType = type => (type === 'all' ? t('tip.all') : LANG === 'uk' ? typeName(type) : typeLower(type));
+const tipType = type => (type === 'all' ? t('tip.all') : LANG === 'uk' ? instrName(type) : instrLower(type));
 const pretty = s => { const d = new Date(s + 'T00:00'); return `${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`; };
 
 function visible() {
@@ -118,13 +118,6 @@ function minutesByDay(list) {
   const m = {};
   for (const s of list) m[s.date] = (m[s.date] || 0) + s.minutes;
   return m;
-}
-function level(min) {
-  if (!min) return 0;
-  if (min <= 15) return 1;
-  if (min <= 30) return 2;
-  if (min < 60) return 3;
-  return 4;
 }
 
 function graphRange() {
@@ -188,34 +181,30 @@ function renderGraph() {
   }
   graph.appendChild(months);
 
-  // "All" is one merged row: drums + vocals minutes added together per day
-  const types = [filter];
+  // One row: the chosen instrument, or "All" with every instrument's minutes added per day
   let yearMin = 0;
   const daysPractised = new Set();
-
-  for (const type of types) {
-    const byDay = minutesByDay(visible());
-    const row = el('div', 'graph-row');
-    // Weekday labels down the left, like GitHub: Mon, Wed, Fri
-    const label = el('div', 'graph-label');
-    t('weekShort').forEach((w, r) => label.appendChild(el('span', null, r % 2 ? w : '')));
-    const cells = el('div', 'cells');
-    let i = 0;
-    for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1), i++) {
-      const key = iso(d);
-      const min = byDay[key] || 0;
-      const c = el('span', 'cell' + (d > end ? ' future' : '') + (key === todayKey ? ' today' : '') + (key === justAddedDate ? ' just' : ''));
-      c.style.setProperty('--d', (Math.floor(i / 7) * 14 + (i % 7) * 18) + 'ms');
-      c.style.background = scaleFor(type)[level(min)];
-      c.dataset.date = key;
-      c.dataset.tip = (min ? t('tip.some', { n: min, type: tipType(type) }) : t('tip.none', { type: tipType(type) })) +
-        ` · ${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`;
-      cells.appendChild(c);
-      if (d <= end && min) { yearMin += min; daysPractised.add(key); }
-    }
-    row.append(label, cells);
-    graph.appendChild(row);
+  const byDay = minutesByDay(visible());
+  const row = el('div', 'graph-row');
+  // Weekday labels down the left, like GitHub: Mon, Wed, Fri
+  const label = el('div', 'graph-label');
+  t('weekShort').forEach((w, r) => label.appendChild(el('span', null, r % 2 ? w : '')));
+  const cells = el('div', 'cells');
+  let i = 0;
+  for (let d = new Date(start); d <= end || d.getDay() !== 0; d.setDate(d.getDate() + 1), i++) {
+    const key = iso(d);
+    const min = byDay[key] || 0;
+    const c = el('span', 'cell' + (d > end ? ' future' : '') + (key === todayKey ? ' today' : '') + (key === justAddedDate ? ' just' : ''));
+    c.style.setProperty('--d', (Math.floor(i / 7) * 14 + (i % 7) * 18) + 'ms');
+    c.style.background = scaleFor(filter)[level(min)];
+    c.dataset.date = key;
+    c.dataset.tip = (min ? t('tip.some', { n: min, type: tipType(filter) }) : t('tip.none', { type: tipType(filter) })) +
+      ` · ${d.getDate()} ${monthShort(d.getMonth())} ${d.getFullYear()}`;
+    cells.appendChild(c);
+    if (d <= end && min) { yearMin += min; daysPractised.add(key); }
   }
+  row.append(label, cells);
+  graph.appendChild(row);
   // On narrow screens, start scrolled to the most recent weeks
   fitGraph(graph);
 
@@ -229,21 +218,6 @@ function renderGraph() {
     const s = el('span', 'cell'); s.style.background = c; legend.appendChild(s);
   }
   legend.append(t('legend.more'));
-}
-
-function streaks(byDay) {
-  let current = 0, longest = 0, run = 0;
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  if (!byDay[iso(d)]) d.setDate(d.getDate() - 1); // not logged today yet doesn't break the streak
-  while (byDay[iso(d)]) { current++; d.setDate(d.getDate() - 1); }
-  let prev = null;
-  for (const k of Object.keys(byDay).sort()) {
-    const t = new Date(k + 'T00:00');
-    run = prev && Math.round((t - prev) / 86400000) === 1 ? run + 1 : 1;
-    longest = Math.max(longest, run);
-    prev = t;
-  }
-  return { current, longest };
 }
 
 function renderStats() {
@@ -287,7 +261,7 @@ function renderSessions() {
     };
     li.append(
       el('span', 's-date', pretty(s.date)),
-      Object.assign(el('span', 'tag', typeLower(s.type)), { style: instrTagStyle(s.type) }),
+      Object.assign(el('span', 'tag', instrLower(s.type)), { style: instrTagStyle(s.type) }),
       el('span', 's-min', t('min', { n: s.minutes })),
       el('span', 's-notes', s.notes || ''),
       del,
@@ -336,7 +310,7 @@ function renderGoal() {
     const col = el('div', 'wb' + (key === todayKey ? ' is-today' : '') + (key > todayKey ? ' future' : ''));
     const parts = order.map(id => [id, (byDayType[key] || {})[id] || 0]).filter(([, m]) => m);
     col.title = `${d.toLocaleDateString(LANG, { weekday: 'long' })}: ` +
-      (min ? parts.map(([id, m]) => `${typeLower(id)} ${fmtMin(m)}`).join(', ') : t('goal.none'));
+      (min ? parts.map(([id, m]) => `${instrLower(id)} ${fmtMin(m)}`).join(', ') : t('goal.none'));
     const track = el('div', 'wb-track');
     // Stacked bar: first instrument at the bottom
     const bar = el('div', 'wb-bar');
@@ -355,7 +329,7 @@ function renderGoal() {
   // Legend: your instruments + the daily target line
   const gl = document.getElementById('goal-legend');
   gl.innerHTML = '';
-  myInstruments(settings).forEach(id => { const k = el('span', 'k', typeName(id)); k.style.setProperty('--k', instrColor(id)); gl.appendChild(k); });
+  myInstruments(settings).forEach(id => { const k = el('span', 'k', instrName(id)); k.style.setProperty('--k', instrColor(id)); gl.appendChild(k); });
   gl.appendChild(el('span', 'k target', t('goal.daily')));
 
   if (lastGoalPct !== null && lastGoalPct < 1 && pct >= 1) confetti(document.getElementById('goal-ring-wrap'));
@@ -444,7 +418,7 @@ function renderRecap() {
   typesUsed.forEach(id => {
     const part = el('span'); part.style.width = (perType[id] / total * 100) + '%'; part.style.background = instrColor(id);
     bar.appendChild(part);
-    const k = el('span', 'k', `${typeName(id)} ${fmtMin(perType[id])} · ${Math.round(perType[id] / total * 100)}%`);
+    const k = el('span', 'k', `${instrName(id)} ${fmtMin(perType[id])} · ${Math.round(perType[id] / total * 100)}%`);
     k.style.setProperty('--k', instrColor(id));
     legend.appendChild(k);
   });
@@ -458,10 +432,8 @@ document.getElementById('recap-next').onclick = () => { recapMonth.setMonth(reca
 
 function render() { renderGraph(); renderStats(); renderGoal(); renderRecap(); renderSessions(); }
 
-// Header date + translated dropdown options
+// Translated dropdown options
 function renderStatic() {
-  document.getElementById('today').textContent =
-    new Date().toLocaleDateString(LANG === 'uk' ? 'uk-UA' : 'en-GB', { weekday: 'long', day: 'numeric', month: 'long' });
   document.querySelectorAll('#minutes-select option').forEach(o => {
     o.textContent = +o.value >= 60 ? plural(o.value / 60, 'hours') : t('min', { n: o.value });
   });
@@ -489,7 +461,7 @@ function renderInstrumentUI() {
   box.innerHTML = '';
   box.classList.toggle('many', mine.length > 3);
   mine.forEach(id => {
-    const b = el('button', id === instrument ? 'on' : null, typeName(id));
+    const b = el('button', id === instrument ? 'on' : null, instrName(id));
     b.type = 'button'; b.dataset.type = id; b.setAttribute('aria-pressed', id === instrument);
     b.onclick = () => {
       instrument = id;
@@ -503,7 +475,7 @@ function renderInstrumentUI() {
   const tabsBox = document.getElementById('tabs');
   tabsBox.querySelectorAll('button').forEach(b => b.remove());
   ['all', ...list].forEach(id => {
-    const b = el('button', id === filter ? 'on' : null, id === 'all' ? t('all') : typeName(id));
+    const b = el('button', id === filter ? 'on' : null, id === 'all' ? t('all') : instrName(id));
     b.type = 'button'; b.setAttribute('role', 'tab'); b.dataset.filter = id; b.setAttribute('aria-selected', id === filter);
     b.onclick = () => {
       filter = id;
@@ -549,7 +521,7 @@ form.addEventListener('submit', e => {
   const minutes = parseInt(form.minutes.value, 10);
   if (!minutes || !form.date.value) return;
   const session = {
-    id: crypto.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random()),
+    id: newId(),
     date: form.date.value, type: instrument, minutes,
     notes: form.notes.value.trim(), created: Date.now(),
   };
@@ -572,17 +544,7 @@ graphEl.addEventListener('click', e => {
   if (c && !c.classList.contains('future')) { form.date.value = c.dataset.date; form.minutes.focus(); }
 });
 
-// Tooltip
-const tip = document.getElementById('tip');
-graphEl.addEventListener('mousemove', e => {
-  const c = e.target.closest('.cells .cell');
-  if (!c || c.classList.contains('future')) { tip.hidden = true; return; }
-  tip.textContent = c.dataset.tip;
-  tip.hidden = false;
-  tip.style.left = Math.min(e.clientX + 10, innerWidth - tip.offsetWidth - 8) + 'px';
-  tip.style.top = (e.clientY - 32) + 'px';
-});
-graphEl.addEventListener('mouseleave', () => tip.hidden = true);
+attachGraphTip(graphEl);
 
 // Export / import
 document.getElementById('export').onclick = () => {

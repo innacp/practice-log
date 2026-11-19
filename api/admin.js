@@ -2,7 +2,7 @@
 //   GET  /api/admin?action=users              -> { users: [{ id, name, email, username, role, created, avatar }] }
 //   POST /api/admin?action=reset { id }       -> { password }  a new temporary password for that user
 import { randomInt } from 'node:crypto';
-import { redis, pairs, readBody, begin, publicUser, loadUser, hashPassword } from './_lib.js';
+import { redis, readBody, begin, publicUser, loadUser, hashPassword } from './_lib.js';
 
 // Every user:<id> key in the database (SCAN walks the keyspace in small steps)
 async function allUserIds() {
@@ -31,14 +31,10 @@ export default async function handler(req, res) {
 
   try {
     if (req.method === 'GET' && req.query.action === 'users') {
-      const users = [];
-      for (const id of await allUserIds()) {
-        const u = pairs(await redis('HGETALL', 'user:' + id));
-        if (u.id) {
-          const p = publicUser(u);
-          users.push({ id: p.id, name: p.name, email: p.email, username: p.username, role: p.role, created: p.created, avatar: p.avatar });
-        }
-      }
+      const users = (await Promise.all((await allUserIds()).map(loadUser))).filter(Boolean).map(u => {
+        const p = publicUser(u);
+        return { id: p.id, name: p.name, email: p.email, username: p.username, role: p.role, created: p.created, avatar: p.avatar };
+      });
       users.sort((a, b) => b.created - a.created);
       return res.status(200).json({ users });
     }
@@ -56,21 +52,15 @@ export default async function handler(req, res) {
     // are random, so a session with one of the admin's ids in someone else's log is a
     // copy (uploaded from a browser that had the old shared log cached).
     if (req.method === 'POST' && req.query.action === 'dedupe') {
-      const mine = pairs(await redis('HGETALL', 'sessions:' + me.id));
-      const myIds = new Set(Object.keys(mine));
-      let removed = 0;
-      const accounts = [];
-      for (const id of await allUserIds()) {
-        if (id === me.id) continue;
-        const theirs = Object.keys(pairs(await redis('HGETALL', 'sessions:' + id)));
-        const copies = theirs.filter(sid => myIds.has(sid));
-        if (copies.length) {
-          await redis('HDEL', 'sessions:' + id, ...copies);
-          removed += copies.length;
-          const u = pairs(await redis('HGETALL', 'user:' + id));
-          accounts.push({ name: u.name, email: u.email, removed: copies.length });
-        }
-      }
+      const myIds = new Set(await redis('HKEYS', 'sessions:' + me.id));
+      const others = (await allUserIds()).filter(id => id !== me.id);
+      const accounts = (await Promise.all(others.map(async id => {
+        const copies = ((await redis('HKEYS', 'sessions:' + id)) || []).filter(sid => myIds.has(sid));
+        if (!copies.length) return null;
+        const [u] = await Promise.all([loadUser(id), redis('HDEL', 'sessions:' + id, ...copies)]);
+        return { name: u && u.name, email: u && u.email, removed: copies.length };
+      }))).filter(Boolean);
+      const removed = accounts.reduce((n, a) => n + a.removed, 0);
       return res.status(200).json({ removed, accounts });
     }
 

@@ -1,13 +1,6 @@
 // "My profile": edit name / username / bio / public, change password, log out, delete account.
-const $ = id => document.getElementById(id);
 let me = null;
 
-function showError(form, code) {
-  const p = form.querySelector('.error');
-  const key = 'err.' + code;
-  p.textContent = t(key) === key ? t('err.generic') : t(key);
-  p.hidden = false;
-}
 function flash(form) {
   const n = form.querySelector('.saved-note');
   n.hidden = false; setTimeout(() => { n.hidden = true; }, 2500);

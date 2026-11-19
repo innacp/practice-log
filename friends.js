@@ -1,16 +1,7 @@
 // Friends page: people you follow, people who follow you, and friends (both ways).
-const $ = id => document.getElementById(id);
 let data = { following: [], followers: [] };
 let tab = 'friends';
 
-// Days in a row with practice, counting back from today (or yesterday)
-function streakOf(days) {
-  const d = new Date(); d.setHours(0, 0, 0, 0);
-  if (!days[iso(d)]) d.setDate(d.getDate() - 1);
-  let n = 0;
-  while (days[iso(d)]) { n++; d.setDate(d.getDate() - 1); }
-  return n;
-}
 function weekMinutes(days) {
   const start = weekStart(new Date());
   return Object.entries(days).reduce((sum, [k, m]) => sum + (new Date(k + 'T00:00') >= start ? m : 0), 0);
@@ -51,7 +42,7 @@ function render() {
 
     const stats = el('div', 'person-stats');
     if (p.public) {
-      const s = streakOf(p.days), w = weekMinutes(p.days);
+      const s = streaks(p.days).current, w = weekMinutes(p.days);
       stats.append(
         el('span', 'p-stat' + (s ? ' hot' : ''), t('follow.streak', { n: s })),
         el('span', 'p-stat', t('follow.week', { t: fmtMin(w) })),
@@ -62,7 +53,7 @@ function render() {
       for (let i = 0; i < 35; i++, d.setDate(d.getDate() + 1)) {
         const m = p.days[iso(d)] || 0;
         const c = el('span', 'cell');
-        c.style.background = ALL_SCALE[!m ? 0 : m <= 15 ? 1 : m <= 30 ? 2 : m < 60 ? 3 : 4];
+        c.style.background = ALL_SCALE[level(m)];
         strip.appendChild(c);
       }
       stats.appendChild(strip);
