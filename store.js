@@ -29,17 +29,19 @@ function mixHex(a, b, w) {
   const [x, y] = [p(a), p(b)];
   return '#' + x.map((v, i) => Math.round(v + (y[i] - v) * w).toString(16).padStart(2, '0')).join('');
 }
-const ALL_SCALE = ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'];
+// Graph shades come from CSS variables so they follow the light / dark theme
+const ALL_SCALE = ['var(--cell-empty)', 'var(--all-1)', 'var(--all-2)', 'var(--all-3)', 'var(--all-4)'];
 // Five graph shades for an instrument: empty, light … dark
 function instrScale(id) {
   const c = instrColor(id);
-  return ['#EEF0F3', mixHex(c, '#ffffff', 0.72), mixHex(c, '#ffffff', 0.42), c, mixHex(c, '#000000', 0.28)];
+  const mix = n => `color-mix(in srgb, ${c} ${n}%, var(--cell-mix))`;
+  return ['var(--cell-empty)', mix(28), mix(58), c, `color-mix(in srgb, ${c} 72%, var(--cell-deep))`];
 }
 const scaleFor = type => (type === 'all' ? ALL_SCALE : instrScale(type));
 // Pale tag background with dark, readable text in the same hue
 function instrTagStyle(id) {
   const c = instrColor(id);
-  return `background:${mixHex(c, '#ffffff', 0.8)};color:${mixHex(c, '#000000', 0.62)}`;
+  return `background:color-mix(in srgb, ${c} 20%, var(--card));color:color-mix(in srgb, ${c} 38%, var(--ink))`;
 }
 // The instruments this person practises (valid ids, in their order)
 function myInstruments(s) {

@@ -1,7 +1,7 @@
 // Public profile page: /u/<username> (or /user?u=<username>)
 const $ = id => document.getElementById(id);
 const uname = (location.pathname.match(/^\/u\/([^/]+)/) || [])[1] || new URLSearchParams(location.search).get('u') || '';
-const SCALE = ['#EEF0F3', '#F6C8FF', '#E58CFA', '#CC3FEB', '#9100B3'];
+const SCALE = ALL_SCALE;
 let profile = null, days = {}, chosen = null;
 
 function level(min) { return !min ? 0 : min <= 15 ? 1 : min <= 30 ? 2 : min < 60 ? 3 : 4; }
