@@ -1,7 +1,8 @@
 // Personal settings, stored next to the sessions.
 //   GET /api/settings  -> { settings }
-//   PUT /api/settings  -> update { weeklyGoal?, instruments? } (other fields are kept)
-//      weeklyGoal: minutes per week, instruments: ["drums", "guitar", ...]
+//   PUT /api/settings  -> update { weeklyGoal?, goals?, instruments? } (other fields are kept)
+//      weeklyGoal: minutes per week, goals: { guitar: 120, ... } per instrument,
+//      instruments: ["drums", "guitar", ...]
 import { redis, begin, readBody } from './_lib.js';
 import { INSTRUMENT_IDS } from './_instruments.js';
 
@@ -22,6 +23,18 @@ export default async function handler(req, res) {
         const goal = Number(body.weeklyGoal);
         if (!Number.isFinite(goal) || goal < 15 || goal > 10080) return res.status(400).json({ error: 'invalid-goal' });
         settings.weeklyGoal = Math.round(goal);
+      }
+      if (body.goals !== undefined) {
+        // Optional weekly goal per instrument, in minutes; 0 or missing = no goal for that one
+        const g = body.goals;
+        if (!g || typeof g !== 'object' || Array.isArray(g)) return res.status(400).json({ error: 'invalid-goal' });
+        const goals = {};
+        for (const [id, v] of Object.entries(g)) {
+          const m = Number(v);
+          if (!INSTRUMENT_IDS.has(id) || !Number.isFinite(m) || m < 0 || m > 10080) return res.status(400).json({ error: 'invalid-goal' });
+          if (m >= 15) goals[id] = Math.round(m);
+        }
+        settings.goals = goals;
       }
       if (body.instruments !== undefined) {
         const list = Array.isArray(body.instruments) ? [...new Set(body.instruments)] : [];

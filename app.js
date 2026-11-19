@@ -334,6 +334,56 @@ function renderGoal() {
 
   if (lastGoalPct !== null && lastGoalPct < 1 && pct >= 1) confetti(document.getElementById('goal-ring-wrap'));
   lastGoalPct = pct;
+  renderInstGoals(weekList);
+}
+
+// Optional goal per instrument: one progress bar each, under the ring
+let lastInstPct = null; // { id: share done } to celebrate when one is crossed
+function renderInstGoals(weekList) {
+  const goals = settings.goals || {};
+  const ids = shownInstruments().filter(id => goals[id] > 0);
+  const box = document.getElementById('inst-goals');
+  box.hidden = !ids.length;
+  box.innerHTML = '';
+  const pcts = {};
+  ids.forEach(id => {
+    const done = weekList.filter(s => s.type === id).reduce((a, s) => a + s.minutes, 0);
+    const pct = done / goals[id];
+    pcts[id] = pct;
+    const row = el('div', 'ig-row' + (pct >= 1 ? ' done' : ''));
+    row.style.setProperty('--k', instrColor(id));
+    const name = el('span', 'ig-name', instrName(id));
+    const bar = el('span', 'ig-bar');
+    const fill = el('span'); fill.style.width = Math.min(100, pct * 100) + '%';
+    bar.appendChild(fill);
+    const text = el('span', 'ig-text', (pct >= 1 ? '✓ ' : '') + t('goal.of', { done: fmtMin(done), goal: fmtMin(goals[id]) }));
+    row.append(name, bar, text);
+    box.appendChild(row);
+    if (lastInstPct && lastInstPct[id] !== undefined && lastInstPct[id] < 1 && pct >= 1) confetti(row);
+  });
+  lastInstPct = pcts;
+}
+
+// Choices for an instrument's goal: none, 30 min … 10 h
+const INST_GOAL_CHOICES = [0, 30, 60, 90, 120, 180, 240, 300, 420, 600];
+const goalChoiceText = m => (!m ? t('goal.noGoal') : m % 60 ? fmtMin(m) : plural(m / 60, 'hours'));
+function buildInstGoalEditor() {
+  const goals = settings.goals || {};
+  const box = document.getElementById('goal-inst-edit');
+  box.innerHTML = '';
+  myInstruments(settings).forEach(id => {
+    const label = el('label', 'gi-row');
+    const name = el('span', 'gi-name', instrName(id));
+    name.style.setProperty('--k', instrColor(id));
+    const sel = el('select', 'field');
+    sel.dataset.inst = id;
+    const current = goals[id] || 0;
+    const values = INST_GOAL_CHOICES.includes(current) ? INST_GOAL_CHOICES : [...INST_GOAL_CHOICES, current].sort((a, b) => a - b);
+    values.forEach(v => { const o = el('option', null, goalChoiceText(v)); o.value = v; sel.appendChild(o); });
+    sel.value = current;
+    label.append(name, sel);
+    box.appendChild(label);
+  });
 }
 
 const goalForm = document.getElementById('goal-form');
@@ -343,6 +393,7 @@ document.getElementById('goal-edit').onclick = () => {
     const o = el('option', null, fmtMin(settings.weeklyGoal)); o.value = settings.weeklyGoal; sel.prepend(o);
   }
   sel.value = settings.weeklyGoal;
+  buildInstGoalEditor();
   goalForm.hidden = false;
   sel.focus();
 };
@@ -350,9 +401,15 @@ document.getElementById('goal-cancel').onclick = () => { goalForm.hidden = true;
 goalForm.addEventListener('submit', async e => {
   e.preventDefault();
   settings.weeklyGoal = +document.getElementById('goal-hours').value;
+  const goals = {};
+  document.querySelectorAll('#goal-inst-edit select').forEach(s => { if (+s.value) goals[s.dataset.inst] = +s.value; });
+  // keep goals of instruments that aren't on the list right now
+  for (const [id, m] of Object.entries(settings.goals || {})) if (!myInstruments(settings).includes(id)) goals[id] = m;
+  settings.goals = goals;
   saveSettingsLocal(settings);
   goalForm.hidden = true;
   lastGoalPct = null; // changing the goal shouldn't throw confetti
+  lastInstPct = null;
   renderGoal();
   if (cloud) {
     const r = await api('PUT', settings, '', '/api/settings');
