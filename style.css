@@ -1075,6 +1075,8 @@ html[data-theme="dark"] {
 @media (min-width: 980px) {
   main.timer-main { display: grid; grid-template-columns: repeat(2, minmax(0, 520px)); justify-content: center; align-items: stretch; }
   .timer-card, .metro-card { max-width: none; }
-  .metro-card { justify-content: center; }
+  /* title stays at the top; the controls sit centred in the space below it */
+  .metro-beats { margin-top: auto; }
+  .metro-link { margin-bottom: auto; }
   .timer-today { grid-column: 1 / -1; }
 }
