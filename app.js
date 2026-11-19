@@ -311,9 +311,10 @@ function renderGoal() {
   const done = Object.values(byDay).reduce((a, b) => a + b, 0);
   const pct = goal ? done / goal : 0;
 
-  const ring = document.getElementById('goal-ring');
-  ring.style.strokeDasharray = RING_C;
-  ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, pct));
+  for (const ring of [document.getElementById('goal-ring'), document.getElementById('goal-ring-glow')]) {
+    ring.style.strokeDasharray = RING_C;
+    ring.style.strokeDashoffset = RING_C * (1 - Math.min(1, pct));
+  }
   document.getElementById('goal-ring-wrap').classList.toggle('done', pct >= 1);
   document.getElementById('goal-pct').textContent = Math.round(pct * 100) + '%';
   document.getElementById('goal-of').textContent = t('goal.of', { done: fmtMin(done), goal: fmtMin(goal) });

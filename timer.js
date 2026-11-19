@@ -20,8 +20,8 @@ function fmtClock(ms) {
   return h ? `${h}:${pad(m)}:${pad(sec)}` : `${pad(m)}:${pad(sec)}`;
 }
 
-const fill = $('dial-fill');
-fill.style.strokeDasharray = CIRC;
+const fill = $('dial-fill'), glow = $('dial-glow');
+fill.style.strokeDasharray = glow.style.strokeDasharray = CIRC;
 
 // ---------- Drawing ----------
 function draw() {
@@ -35,13 +35,11 @@ function draw() {
   } else {
     progress = (ms % 60000) / 60000; // sweeps once a minute
   }
-  fill.style.strokeDashoffset = CIRC * (1 - progress);
+  fill.style.strokeDashoffset = glow.style.strokeDashoffset = CIRC * (1 - progress);
   $('dial').classList.toggle('done', !!targetMs && ms >= targetMs);
   $('dial').classList.toggle('running', running());
   // Ring takes the instrument's colour
-  fill.style.stroke = instrColor(state.type);
-  // glow on the whole drawing, not the arc, so it isn't clipped to a square
-  fill.ownerSVGElement.style.filter = running() ? `drop-shadow(0 0 10px ${instrColor(state.type)}aa)` : '';
+  fill.style.stroke = glow.style.stroke = instrColor(state.type);
 
   let sub;
   if (running()) sub = targetMs ? (ms >= targetMs ? t('timer.reached') : t('timer.toGo', { t: fmtMin(Math.ceil((targetMs - ms) / 60000)) })) : t('timer.practising');
