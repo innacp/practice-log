@@ -23,12 +23,21 @@ let done = loadDone();
 let filter = 'all';
 
 // ---------------------------------------------------------------- sound
-let ctx;
+let ctx, master;
 function audio() {
-  ctx = ctx || new (window.AudioContext || window.webkitAudioContext)();
-  if (ctx.state === 'suspended') ctx.resume();
+  if (!ctx) {
+    ctx = new (window.AudioContext || window.webkitAudioContext)({ latencyHint: 'interactive' });
+    // Everything goes through one limiter, so fast playing and chords don't crackle
+    master = ctx.createDynamicsCompressor();
+    master.threshold.value = -10; master.knee.value = 6; master.ratio.value = 12;
+    master.attack.value = 0.002; master.release.value = 0.15;
+    master.connect(ctx.destination);
+  }
+  if (ctx.state !== 'running') ctx.resume();
   return ctx;
 }
+// iPhones only let sound start from a finished tap, so wake the sound up on every tap end too
+['touchend', 'click'].forEach(t => document.addEventListener(t, () => { if (ctx && ctx.state !== 'running') ctx.resume(); }, { passive: true }));
 // A soft piano-like tone: a few partials with a quick attack and long decay
 function pianoNote(freqHz, when, dur = 1.2, vol = 0.22) {
   const a = audio(), g = a.createGain(), f = a.createBiquadFilter();
@@ -37,19 +46,23 @@ function pianoNote(freqHz, when, dur = 1.2, vol = 0.22) {
   g.gain.linearRampToValueAtTime(vol, when + 0.008);
   g.gain.exponentialRampToValueAtTime(vol * 0.35, when + 0.25);
   g.gain.exponentialRampToValueAtTime(0.0008, when + dur);
-  [[1, 'triangle', 1], [2, 'sine', 0.35], [3, 'sine', 0.12]].forEach(([mult, type, lvl]) => {
+  const oscs = [[1, 'triangle', 1], [2, 'sine', 0.35], [3, 'sine', 0.12]].map(([mult, type, lvl]) => {
     const o = a.createOscillator(), og = a.createGain();
     o.type = type; o.frequency.value = freqHz * mult; og.gain.value = lvl;
     o.connect(og).connect(f);
     o.start(when); o.stop(when + dur + 0.05);
+    return [o, og];
   });
-  f.connect(g).connect(a.destination);
+  f.connect(g).connect(master);
+  // Free the nodes when the note ends; Safari keeps them otherwise and slows down after a while
+  oscs[0][0].onended = () => { oscs.forEach(([o, og]) => { o.disconnect(); og.disconnect(); }); f.disconnect(); g.disconnect(); };
 }
 function click(when, accent) {
   const a = audio(), o = a.createOscillator(), g = a.createGain();
   o.type = 'square'; o.frequency.value = accent ? 1500 : 1000;
   g.gain.setValueAtTime(0.12, when); g.gain.exponentialRampToValueAtTime(0.001, when + 0.05);
-  o.connect(g).connect(a.destination); o.start(when); o.stop(when + 0.06);
+  o.connect(g).connect(master); o.start(when); o.stop(when + 0.06);
+  o.onended = () => { o.disconnect(); g.disconnect(); };
 }
 
 // ---------------------------------------------------------------- notes
@@ -117,11 +130,19 @@ function buildPiano(box) {
   if (labels.length && groups[0]) groups[0].forEach((n, i) => {
     if (keyEls[n] && labels[i]) keyEls[n].appendChild(el('span', 'klabel', labels[i].replace(/_/g, ' ')));
   });
+  const timers = {};
   const flash = (n, ms = 450) => {
     const k = keyEls[n]; if (!k) return;
-    k.classList.add('on'); setTimeout(() => k.classList.remove('on'), ms);
+    clearTimeout(timers[n]);
+    k.classList.add('on'); timers[n] = setTimeout(() => k.classList.remove('on'), ms);
   };
-  Object.entries(keyEls).forEach(([n, k]) => { k.onclick = () => { pianoNote(freqOf(+n), audio().currentTime); flash(+n); }; });
+  const press = n => { pianoNote(freqOf(n), audio().currentTime); flash(n, 250); };
+  Object.entries(keyEls).forEach(([n, k]) => {
+    // Sound on touch-down (no waiting for the finger to lift); click only for the keyboard
+    k.addEventListener('pointerdown', e => { if (e.button === 0) press(+n); });
+    k.addEventListener('click', e => { if (e.detail === 0) press(+n); });
+    k.addEventListener('contextmenu', e => e.preventDefault());
+  });
 
   box.innerHTML = '';
   const scroll = el('div', 'kb-scroll');
