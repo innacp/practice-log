@@ -1,0 +1,69 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Friends · Muza</title>
+  <link rel="icon" href="favicon.svg" type="image/svg+xml">
+  <link rel="apple-touch-icon" href="favicon.svg">
+  <meta name="theme-color" content="#D100FF">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+  <script src="theme.js"></script>
+</head>
+<body data-title="title.friends">
+  <header class="topbar">
+    <div class="wrap topbar-inner">
+      <a class="brand" href="/">
+        <img class="logo" src="favicon.svg" width="34" height="34" alt="">
+        <span class="wordmark" data-i18n="brand">Muza</span>
+      </a>
+      <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
+        <a href="/practice" data-i18n="nav.log">Practice</a>
+        <a href="/timer" data-i18n="nav.timer">Timer</a>
+        <a href="/theory" data-i18n="nav.theory">Theory</a>
+        <a href="/friends" aria-current="page" data-i18n="nav.friends">Friends</a>
+      </nav>
+      <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
+        <button type="button" data-lang="en" lang="en">EN</button>
+        <button type="button" data-lang="uk" lang="uk">UA</button>
+      </div>
+      <a class="account-btn" href="/login" hidden>Log in</a>
+    </div>
+  </header>
+
+  <main class="wrap friends-main" id="friends-main" hidden>
+    <section class="card friends-add">
+      <div>
+        <h2 data-i18n="follow.addTitle">Add a friend</h2>
+        <p class="muted" data-i18n="follow.addText">Type their username. You can find it on their profile page, after the @.</p>
+      </div>
+      <form class="friends-form" id="add-form">
+        <input type="text" id="add-name" autocomplete="off" autocapitalize="none" spellcheck="false" placeholder="@username" data-i18n-aria="follow.addTitle" aria-label="Add a friend">
+        <button type="submit" class="primary" data-i18n="follow.follow">Follow</button>
+      </form>
+      <p class="muted friends-msg" id="add-msg" hidden></p>
+      <div class="my-link">
+        <span class="muted" data-i18n="follow.myLink">Your link to send to friends:</span>
+        <code id="my-link"></code>
+        <button type="button" class="ghost" id="copy-link" data-i18n="follow.copy">Copy</button>
+      </div>
+    </section>
+
+    <section class="card">
+      <div class="tabs friends-tabs" role="tablist">
+        <button type="button" role="tab" data-tab="friends" class="on"><span data-i18n="follow.friendsTab">Friends</span> <b id="n-friends">0</b></button>
+        <button type="button" role="tab" data-tab="following"><span data-i18n="follow.followingTab">Following</span> <b id="n-following">0</b></button>
+        <button type="button" role="tab" data-tab="followers"><span data-i18n="follow.followersTab">Followers</span> <b id="n-followers">0</b></button>
+      </div>
+      <ul class="people" id="people"></ul>
+    </section>
+  </main>
+
+  <script src="i18n.js"></script>
+  <script src="store.js"></script>
+  <script src="friends.js"></script>
+</body>
+</html>

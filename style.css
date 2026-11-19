@@ -1145,3 +1145,49 @@ html[data-theme="dark"] {
   .home-hero { grid-template-columns: 1fr; gap: 28px; padding-top: 8px; }
   .home-features { grid-template-columns: 1fr; }
 }
+
+/* =========================================================
+   Following and friends
+   ========================================================= */
+.u-follow { margin: 6px 0 0; display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.u-follow b { color: var(--ink); }
+.friend-badge { display: inline-block; font-size: 12px; font-weight: 600; padding: 1px 9px; border-radius: 999px; background: rgba(200, 0, 245, 0.14); color: var(--link); }
+.friend-badge.soft { background: rgba(var(--tint), 0.06); color: var(--muted); }
+.follow-btn { height: 40px; padding: 0 18px; }
+.friends-main { max-width: 860px; }
+.friends-add { display: flex; flex-direction: column; gap: 14px; }
+.friends-form { display: flex; gap: 10px; flex-wrap: wrap; }
+.friends-form input { flex: 1 1 220px; height: 46px; padding: 0 12px; border: 1px solid var(--field); border-radius: 10px; color: var(--ink); background: var(--card); font: inherit; }
+.friends-form .primary { padding: 0 22px; height: 46px; }
+.friends-msg { margin: 0; padding: 10px 12px; border-radius: 10px; font-size: 14px; }
+.friends-msg.ok { background: #E6F6EC; color: #1D6B3A; }
+.friends-msg.err { background: #FDE8E8; color: #A11D1D; }
+[data-theme="dark"] .friends-msg.ok { background: rgba(76, 200, 120, 0.16); color: #8BE3A8; }
+[data-theme="dark"] .friends-msg.err { background: rgba(255, 90, 90, 0.14); color: #FF9A9A; }
+.my-link { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; padding-top: 14px; border-top: 1px solid var(--line-soft); font-size: 14px; }
+.my-link code { font: 500 13px ui-monospace, Consolas, monospace; padding: 6px 10px; border-radius: 8px; background: rgba(var(--tint), 0.05); overflow-wrap: anywhere; }
+.friends-tabs { margin-bottom: 8px; }
+.friends-tabs button b { margin-left: 4px; font-size: 12px; color: var(--muted); }
+.people { list-style: none; margin: 0; padding: 0; }
+.people-empty { padding: 20px 0 6px; }
+.person { display: flex; align-items: center; gap: 14px; padding: 14px 0; border-top: 1px solid var(--line-soft); flex-wrap: wrap; }
+.person:first-child { border-top: 0; }
+.person .avatar { flex: none; text-decoration: none; }
+.person-who { flex: 1 1 160px; min-width: 0; display: flex; flex-direction: column; }
+.person-name { color: var(--ink); font-weight: 600; text-decoration: none; }
+.person-name:hover { color: var(--link); }
+.person-who .muted { font-size: 13px; }
+.person-stats { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; font-size: 13px; color: var(--muted); }
+.p-stat.hot { color: var(--ink); font-weight: 600; }
+.p-strip { display: grid; grid-template-rows: repeat(7, 7px); grid-auto-flow: column; gap: 2px; }
+.p-strip .cell { width: 7px; height: 7px; border-radius: 2px; }
+.person > button { height: 38px; padding: 0 14px; border-radius: 10px; font-weight: 600; cursor: pointer; }
+@media (max-width: 600px) {
+  .person-stats { order: 3; width: 100%; padding-left: 54px; }
+}
+@media (max-width: 600px) {
+  .person-who { flex-basis: 0; }
+  .person-stats { padding-left: 54px; }
+  .friends-tabs button { padding: 0 6px; font-size: 14px; white-space: nowrap; }
+  .friends-tabs button b { margin-left: 2px; }
+}

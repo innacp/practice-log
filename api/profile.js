@@ -2,7 +2,7 @@
 // Profile photo:  GET /api/profile?u=<username>&avatar=<version>  (the image itself, cached)
 // Returns the name, bio, join date and minutes practised per day, per instrument.
 // Notes are never shared. Private profiles are only visible to their owner.
-import { redis, begin, loadUser } from './_lib.js';
+import { redis, pairs, begin, loadUser } from './_lib.js';
 import { INSTRUMENT_IDS } from './_instruments.js';
 
 export default async function handler(req, res) {
@@ -37,10 +37,16 @@ export default async function handler(req, res) {
       const d = days[s.date] || (days[s.date] = {});
       d[s.type] = (d[s.type] || 0) + (Number(s.minutes) || 0);
     }
+    const followers = pairs(await redis('HGETALL', 'followers:' + user.id));
+    const following = pairs(await redis('HGETALL', 'following:' + user.id));
+    const follow = {
+      followers: Object.keys(followers).length, following: Object.keys(following).length,
+      youFollow: !!viewer.id && viewer.id in followers, followsYou: !!viewer.id && viewer.id in following,
+    };
     let instruments = null;
     try { instruments = (JSON.parse(await redis('GET', 'settings:' + user.id)) || {}).instruments || null; } catch {}
     return res.status(200).json({
-      instruments,
+      instruments, follow,
       profile: {
         name: user.name, username: user.username, bio: user.bio || '',
         created: Number(user.created) || 0, public: user.public !== '0', own, avatar: Number(user.avatar) || 0,

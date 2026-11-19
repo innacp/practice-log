@@ -2,7 +2,7 @@
 const $ = id => document.getElementById(id);
 const uname = (location.pathname.match(/^\/u\/([^/]+)/) || [])[1] || new URLSearchParams(location.search).get('u') || '';
 const SCALE = ALL_SCALE;
-let profile = null, days = {}, chosen = null;
+let profile = null, days = {}, chosen = null, follow = null;
 
 function level(min) { return !min ? 0 : min <= 15 ? 1 : min <= 30 ? 2 : min < 60 ? 3 : 4; }
 const total = d => (d ? Object.values(d).reduce((a, b) => a + b, 0) : 0);
@@ -32,6 +32,7 @@ function render() {
   $('u-bio').hidden = !profile.bio;
   $('u-edit').hidden = !profile.own;
   $('u-private').hidden = !(profile.own && !profile.public);
+  renderFollow();
 
   const { current, longest } = streaks();
   const practised = Object.keys(days).filter(k => total(days[k]));
@@ -111,11 +112,39 @@ $('graph').addEventListener('mousemove', e => {
 });
 $('graph').addEventListener('mouseleave', () => { tip.hidden = true; });
 
+// Followers / following counts and the Follow button
+function renderFollow() {
+  if (!follow) return;
+  const line = $('u-follow');
+  line.innerHTML = '';
+  const count = (n, key) => { const s = el('span'); s.append(el('b', null, String(n)), ' ' + plural(n, key)); return s; };
+  line.append(count(follow.followers, 'follow.followersWord'), ' · ', count(follow.following, 'follow.followingWord'));
+  if (follow.youFollow && follow.followsYou) line.append(' ', el('span', 'friend-badge', t('follow.friends')));
+  else if (follow.followsYou) line.append(' ', el('span', 'friend-badge soft', t('follow.followsYou')));
+  const btn = $('u-followbtn');
+  btn.hidden = profile.own;
+  btn.textContent = follow.youFollow ? t('follow.following') : follow.followsYou ? t('follow.back') : t('follow.follow');
+  btn.className = follow.youFollow ? 'ghost follow-btn' : 'primary follow-btn';
+}
+$('u-followbtn').onclick = async () => {
+  if (!currentUser()) { location.href = '/login?next=' + encodeURIComponent(location.pathname); return; }
+  const btn = $('u-followbtn');
+  if (follow.youFollow && !confirm(t('follow.confirmUn', { name: profile.name }))) return;
+  btn.disabled = true;
+  const r = await api(follow.youFollow ? 'DELETE' : 'POST', { username: profile.username }, '', '/api/follow');
+  btn.disabled = false;
+  if (r.status !== 200) { alert(t('err.generic')); return; }
+  follow.followers += r.data.youFollow ? 1 : -1;
+  follow.youFollow = r.data.youFollow;
+  follow.followsYou = r.data.followsYou;
+  renderFollow();
+};
+
 function message(key) { const m = $('u-msg'); m.textContent = t(key); m.hidden = false; $('u-page').hidden = true; }
 
 (async () => {
   const r = await api('GET', null, '?u=' + encodeURIComponent(uname.toLowerCase()), '/api/profile');
-  if (r.status === 200) { profile = r.data.profile; days = r.data.days || {}; chosen = r.data.instruments; $('u-page').hidden = false; render(); }
+  if (r.status === 200) { profile = r.data.profile; days = r.data.days || {}; chosen = r.data.instruments; follow = r.data.follow; await authReady; $('u-page').hidden = false; render(); }
   else if (r.status === 403) message('user.private');
   else if (r.status === 404) message('user.notFound');
   else message(r.status === 503 || r.status === 0 ? 'auth.noDb' : 'err.generic');

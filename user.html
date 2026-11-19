@@ -24,6 +24,7 @@
         <a href="/practice" data-i18n="nav.log">Practice</a>
         <a href="/timer" data-i18n="nav.timer">Timer</a>
         <a href="/theory" data-i18n="nav.theory">Theory</a>
+        <a href="/friends" data-i18n="nav.friends">Friends</a>
       </nav>
       <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
         <button type="button" data-lang="en" lang="en">EN</button>
@@ -42,11 +43,13 @@
         <div class="profile-who">
           <h1><span id="u-name"></span> <span class="role-badge" id="u-admin" hidden data-i18n="prof.adminBadge">Admin</span></h1>
           <p class="muted"><span id="u-handle"></span> · <span id="u-joined"></span></p>
+          <p class="u-follow muted" id="u-follow"></p>
           <p class="u-bio" id="u-bio"></p>
           <div class="u-instruments" id="u-instruments"></div>
         </div>
         <div class="profile-head-actions">
           <a class="ghost btn-link" id="u-edit" href="/profile" hidden data-i18n="user.edit">Edit profile</a>
+          <button type="button" class="primary follow-btn" id="u-followbtn" hidden></button>
         </div>
       </section>
       <p class="note-private" id="u-private" hidden data-i18n="user.privateNote"></p>

@@ -7,7 +7,7 @@
 //   DELETE /api/me?action=avatar        remove profile photo
 import { redis, readBody, begin, publicUser, loadUser, hashPassword, checkPassword, endSession, parseImage, limited } from './_lib.js';
 
-const RESERVED = new Set(['admin', 'login', 'profile', 'api', 'timer', 'theory', 'u', 'me', 'muza', 'settings']);
+const RESERVED = new Set(['admin', 'login', 'profile', 'api', 'timer', 'theory', 'u', 'me', 'muza', 'settings', 'friends', 'practice', 'home']);
 
 export default async function handler(req, res) {
   const me = await begin(req, res, { needUser: true });
@@ -68,6 +68,12 @@ export default async function handler(req, res) {
       const b = readBody(req) || {};
       if (!(await checkPassword(String(b.password || ''), me.pass))) return res.status(403).json({ error: 'wrong-password' });
       if (me.role === 'admin') return res.status(400).json({ error: 'admin-cannot-delete' });
+      // Take this account out of everyone's following / followers lists
+      const following = (await redis('HGETALL', 'following:' + me.id)) || [];
+      const followers = (await redis('HGETALL', 'followers:' + me.id)) || [];
+      for (let i = 0; i < following.length; i += 2) await redis('HDEL', 'followers:' + following[i], me.id);
+      for (let i = 0; i < followers.length; i += 2) await redis('HDEL', 'following:' + followers[i], me.id);
+      await redis('DEL', 'following:' + me.id, 'followers:' + me.id);
       await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'avatar:' + me.id, 'email:' + me.email, 'uname:' + me.username);
       await endSession(req, res);
       return res.status(200).json({ deleted: true });
