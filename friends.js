@@ -1,7 +1,7 @@
 // Friends page: activity of the people you follow (with cheers), this week's board,
 // and the lists of people you follow, who follow you, and friends (both ways).
 let data = { me: null, following: [], followers: [] };
-let tab = 'friends';
+let tab = 'friends', tabPicked = false;
 let feedShown = 15;
 
 function weekMinutes(days) {
@@ -193,6 +193,7 @@ async function toggle(p, btn) {
 async function load() {
   const r = await api('GET', null, '', '/api/follow');
   if (r.status === 200) data = r.data;
+  if (!tabPicked) { const l = lists(); tab = ['friends', 'following', 'followers'].find(k => l[k].length) || 'friends'; }
   render();
 }
 
@@ -212,6 +213,7 @@ $('add-form').addEventListener('submit', async e => {
     $('add-name').value = '';
     addMsg(r.data.followsYou ? 'follow.ok.friends' : 'follow.ok', { name: '@' + name }, 'ok');
     tab = r.data.followsYou ? 'friends' : 'following';
+    tabPicked = true;
     load();
   } else {
     const err = r.data && r.data.error;
@@ -219,7 +221,7 @@ $('add-form').addEventListener('submit', async e => {
   }
 });
 
-document.querySelectorAll('.friends-tabs button').forEach(b => { b.onclick = () => { tab = b.dataset.tab; render(); }; });
+document.querySelectorAll('.friends-tabs button').forEach(b => { b.onclick = () => { tab = b.dataset.tab; tabPicked = true; render(); }; });
 $('feed-more').onclick = () => { feedShown += 15; renderFeed(); };
 
 $('copy-link').onclick = async () => {

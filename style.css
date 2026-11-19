@@ -1117,3 +1117,20 @@ html[data-theme="dark"] {
 }
 .clip-btn:hover, .clip-btn.on { background: var(--brand); color: #fff; }
 #only-clips.on { border-color: var(--brand); color: var(--link); background: rgba(200, 0, 245, 0.08); }
+
+/* =========================================================
+   UI tidy-up
+   ========================================================= */
+.list-more { display: block; margin: 10px auto 0; }
+.admin-view { margin-left: auto; }
+.topbar-inner > .theme-btn, .topbar-inner > .admin-link, .topbar-inner > .account-btn { flex: none; }
+@media (max-width: 600px) {
+  /* Phone header: logo and all buttons on one row, pages underneath */
+  .topbar-inner { column-gap: 8px; }
+  .lang-switch button { min-width: 34px; padding: 0 6px; }
+  .wordmark { font-size: 22px; }
+  /* Two-by-two stats: no divider at the start of a row */
+  .user-stats .streak-stats div:nth-child(odd) { border-left: 0; padding-left: 0; }
+  .admin-view { display: none; }
+}
+.graph-scroll { scrollbar-width: thin; }

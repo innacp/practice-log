@@ -40,7 +40,7 @@
       try { localStorage.setItem(KEY, saved); } catch (e) {}
       apply();
     };
-    const anchor = bar.querySelector('.lang-switch') || bar.querySelector('.admin-badge') || bar.querySelector('.account-btn');
+    const anchor = bar.querySelector('.lang-switch') || bar.querySelector('.account-btn');
     if (anchor && anchor.classList.contains('account-btn')) bar.insertBefore(btn, anchor);
     else if (anchor) anchor.after(btn);
     else bar.appendChild(btn);

@@ -242,7 +242,8 @@ function renderStats() {
   countTo('hours', total / 60, 1);
 }
 
-let onlyClips = false; // "Recordings" filter: every session with a clip, oldest ones too
+let onlyClips = false; // "Recordings" filter: only sessions with a clip
+let sessionsShown = 10;
 function renderSessions() {
   const ul = document.getElementById('sessions');
   ul.innerHTML = '';
@@ -252,7 +253,8 @@ function renderSessions() {
   clipsBtn.classList.toggle('on', onlyClips);
   clipsBtn.setAttribute('aria-pressed', onlyClips);
   const sorted = [...visible()].filter(s => !onlyClips || s.clip).sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created);
-  const list = onlyClips ? sorted : sorted.slice(0, 30);
+  const list = sorted.slice(0, sessionsShown);
+  document.getElementById('sessions-more').hidden = sorted.length <= sessionsShown;
   if (!list.length) { ul.appendChild(el('li', 'empty', t('sessions.empty'))); return; }
   for (const s of list) {
     const li = el('li', s.id === justAddedId ? 'new' : null);
@@ -278,7 +280,8 @@ function renderSessions() {
     ul.appendChild(li);
   }
 }
-document.getElementById('only-clips').onclick = () => { onlyClips = !onlyClips; renderSessions(); };
+document.getElementById('only-clips').onclick = () => { onlyClips = !onlyClips; sessionsShown = 10; renderSessions(); };
+document.getElementById('sessions-more').onclick = () => { sessionsShown += 20; renderSessions(); };
 
 // ---------- Weekly goal ----------
 const RING_C = 2 * Math.PI * 60;
