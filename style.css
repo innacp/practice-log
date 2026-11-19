@@ -187,18 +187,19 @@ main > *:nth-child(4) { animation-delay: 0.25s; }
 .fire .outer {
   width: 70px; height: 70px; margin-left: -35px;
   background: linear-gradient(45deg, #F0233F 20%, #FF2E7A 65%, rgba(255, 46, 122, 0.45) 100%);
+  filter: blur(2px); /* soft edges: most on the outside, least on the bright core */
   animation: flick-a 1.3s ease-in-out infinite;
 }
 .fire .mid {
   width: 50px; height: 50px; margin-left: -25px; bottom: 12px;
   background: linear-gradient(45deg, #FF8A00 25%, #FFA51F 70%, rgba(255, 165, 31, 0.55) 100%);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.35);
+  filter: blur(1.5px);
   animation: flick-b 1s ease-in-out infinite;
 }
 .fire .inner {
   width: 28px; height: 28px; margin-left: -14px; bottom: 12px;
   background: linear-gradient(45deg, #FFF8D6 25%, #FFE14A 75%, rgba(255, 225, 74, 0.6) 100%);
-  box-shadow: 0 0 0 1.5px rgba(255, 255, 255, 0.45);
+  filter: blur(1px);
   animation: flick-c 0.8s ease-in-out infinite;
 }
 @keyframes flick-a {
