@@ -14,6 +14,7 @@ const INSTRUMENTS = [
   { id: 'guitar',  color: '#38B6FF', en: ['Guitar', 'guitar'],   uk: ['Гітара', 'гітара'] },
   { id: 'bass',    color: '#FFC93C', en: ['Bass', 'bass'],       uk: ['Бас-гітара', 'бас-гітара'] },
   { id: 'piano',   color: '#7B61FF', en: ['Piano', 'piano'],     uk: ['Фортепіано', 'фортепіано'] },
+  { id: 'sopilka', color: '#2DD4BF', en: ['Sopilka', 'sopilka'], uk: ['Сопілка', 'сопілка'] },
 ];
 const INSTR = Object.fromEntries(INSTRUMENTS.map(i => [i.id, i]));
 const DEFAULT_INSTRUMENTS = ['drums', 'vocals'];
