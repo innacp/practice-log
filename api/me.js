@@ -75,7 +75,8 @@ export default async function handler(req, res) {
         ...(followers || []).map(id => redis('HDEL', 'following:' + id, me.id)),
       ]);
       await redis('DEL', 'user:' + me.id, 'sessions:' + me.id, 'settings:' + me.id, 'avatar:' + me.id,
-        'email:' + me.email, 'uname:' + me.username, 'following:' + me.id, 'followers:' + me.id);
+        'email:' + me.email, 'uname:' + me.username, 'following:' + me.id, 'followers:' + me.id,
+        'cheers:' + me.id, 'cheers-seen:' + me.id);
       await endSession(req, res);
       return res.status(200).json({ deleted: true });
     }

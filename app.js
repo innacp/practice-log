@@ -575,3 +575,32 @@ renderInstrumentUI();
 document.fonts && document.fonts.ready.then(movePill);
 render();   // show the cached copy right away
 connect();  // then load from the online database
+
+// Cheers friends gave your practice since you last looked
+let newCheers = [];
+function renderCheers() {
+  const ul = document.getElementById('cheers-list');
+  ul.innerHTML = '';
+  const todayKey = today(), yest = new Date(); yest.setDate(yest.getDate() - 1);
+  const dayText = date => date === todayKey ? t('cheers.today') : date === iso(yest) ? t('cheers.yesterday')
+    : t('cheers.on', { d: `${new Date(date + 'T00:00').getDate()} ${monthShort(new Date(date + 'T00:00').getMonth())}` });
+  newCheers.slice(0, 3).forEach(c => {
+    const li = el('li');
+    const name = el('a', null, c.name); name.href = '/u/' + c.username;
+    li.append(c.emoji === 'fire' ? '🔥 ' : '👏 ', name, ' ' + t('cheers.line', { day: dayText(c.date) }));
+    ul.appendChild(li);
+  });
+  if (newCheers.length > 3) ul.appendChild(el('li', 'muted', t('cheers.more', { n: newCheers.length - 3 })));
+  document.getElementById('cheers-note').hidden = !newCheers.length;
+}
+authReady.then(async () => {
+  if (!currentUser()) return;
+  const r = await api('GET', null, '?view=cheers', '/api/follow');
+  if (r.status === 200) { newCheers = r.data.cheers; renderCheers(); }
+});
+document.getElementById('cheers-ok').onclick = () => {
+  newCheers = [];
+  renderCheers();
+  api('POST', null, '?action=seen', '/api/follow');
+};
+document.addEventListener('langchange', renderCheers);

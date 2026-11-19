@@ -1,10 +1,117 @@
-// Friends page: people you follow, people who follow you, and friends (both ways).
-let data = { following: [], followers: [] };
+// Friends page: activity of the people you follow (with cheers), this week's board,
+// and the lists of people you follow, who follow you, and friends (both ways).
+let data = { me: null, following: [], followers: [] };
 let tab = 'friends';
+let feedShown = 15;
 
 function weekMinutes(days) {
   const start = weekStart(new Date());
   return Object.entries(days).reduce((sum, [k, m]) => sum + (new Date(k + 'T00:00') >= start ? m : 0), 0);
+}
+
+// ---------------------------------------------------------------- activity feed
+// One entry per person per day: everything they logged that day, newest day first
+function feedItems() {
+  const items = [];
+  for (const p of data.following) {
+    if (!p.public) continue;
+    const byDate = {};
+    for (const s of p.recent || []) {
+      const it = byDate[s.date] || (byDate[s.date] = { p, date: s.date, parts: {}, last: 0 });
+      it.parts[s.type] = (it.parts[s.type] || 0) + s.minutes;
+      it.last = Math.max(it.last, s.created || new Date(s.date + 'T12:00').getTime());
+    }
+    items.push(...Object.values(byDate));
+  }
+  return items.sort((a, b) => b.last - a.last);
+}
+
+// "just now", "2 hours ago", "yesterday" in the current language
+function ago(time) {
+  const s = Math.round((Date.now() - time) / 1000);
+  if (s < 60) return t('feed.now');
+  const rtf = new Intl.RelativeTimeFormat(LANG === 'uk' ? 'uk' : 'en', { numeric: 'auto' });
+  if (s < 3600) return rtf.format(-Math.floor(s / 60), 'minute');
+  if (s < 86400) return rtf.format(-Math.floor(s / 3600), 'hour');
+  return rtf.format(-Math.floor(s / 86400), 'day');
+}
+
+const EMOJI = { clap: '👏', fire: '🔥' };
+
+function renderFeed() {
+  const items = feedItems();
+  const ul = $('feed');
+  ul.innerHTML = '';
+  if (!items.length) ul.appendChild(el('li', 'people-empty muted', t('feed.empty')));
+  items.slice(0, feedShown).forEach(it => {
+    const { p } = it;
+    const li = el('li', 'feed-item');
+    const av = el('a', 'avatar'); av.href = '/u/' + p.username; paintAvatar(av, p);
+    const body = el('div', 'feed-body');
+    const line = el('p', 'feed-line');
+    const name = el('a', 'person-name', p.name); name.href = '/u/' + p.username;
+    const what = Object.entries(it.parts).map(([type, m]) => `${instrLower(type)} ${fmtMin(m)}`).join(', ');
+    line.append(name, ' ' + t('feed.did', { what }));
+    body.append(line, el('span', 'muted feed-when', ago(it.last)));
+    li.append(av, body);
+
+    const cheers = p.cheers[it.date] || { clap: 0, fire: 0, mine: null };
+    const box = el('div', 'cheer-box');
+    for (const e of ['clap', 'fire']) {
+      const b = el('button', 'cheer' + (cheers.mine === e ? ' on' : ''));
+      b.type = 'button';
+      b.setAttribute('aria-pressed', cheers.mine === e);
+      b.setAttribute('aria-label', t('cheer.' + e));
+      b.title = t('cheer.' + e);
+      b.append(EMOJI[e]);
+      if (cheers[e]) b.append(el('span', null, String(cheers[e])));
+      b.onclick = () => cheer(p, it.date, e, b);
+      box.appendChild(b);
+    }
+    li.appendChild(box);
+    ul.appendChild(li);
+  });
+  $('feed-more').hidden = items.length <= feedShown;
+}
+
+async function cheer(p, date, emoji, btn) {
+  btn.disabled = true;
+  const r = await api('POST', { username: p.username, date, emoji }, '?action=cheer', '/api/follow');
+  btn.disabled = false;
+  if (r.status !== 200) { alert(t('err.generic')); return; }
+  const c = p.cheers[date] || (p.cheers[date] = { clap: 0, fire: 0, mine: null });
+  if (c.mine) c[c.mine]--;
+  c.mine = r.data.mine;
+  if (c.mine) {
+    c[c.mine]++;
+    confetti(btn);
+  }
+  renderFeed();
+}
+
+// ---------------------------------------------------------------- this week's board
+function renderBoard() {
+  const people = [data.me, ...data.following.filter(p => p.public)].filter(Boolean)
+    .map(p => ({ p, min: weekMinutes(p.days), me: p === data.me }))
+    .sort((a, b) => b.min - a.min || (a.me ? -1 : 1));
+  const top = Math.max(1, ...people.map(x => x.min));
+  const ol = $('board');
+  ol.innerHTML = '';
+  people.forEach((x, i) => {
+    const li = el('li', 'board-row' + (x.me ? ' me' : ''));
+    const medal = x.min && i < 3 ? ['🥇', '🥈', '🥉'][i] : String(i + 1);
+    li.append(el('span', 'board-rank', medal));
+    const av = el('span', 'avatar'); paintAvatar(av, x.p);
+    li.appendChild(av);
+    const mid = el('div', 'board-mid');
+    mid.append(el('span', 'board-name', x.me ? t('board.you') : x.p.name));
+    const bar = el('span', 'board-bar');
+    const fill = el('span'); fill.style.width = (x.min / top * 100) + '%';
+    bar.appendChild(fill);
+    mid.appendChild(bar);
+    li.append(mid, el('b', 'board-min', fmtMin(x.min)));
+    ol.appendChild(li);
+  });
 }
 
 function lists() {
@@ -13,6 +120,8 @@ function lists() {
 }
 
 function render() {
+  $('friends-top').hidden = !data.following.length;
+  if (data.following.length) { renderFeed(); renderBoard(); }
   const l = lists();
   $('n-friends').textContent = l.friends.length;
   $('n-following').textContent = l.following.length;
@@ -111,6 +220,7 @@ $('add-form').addEventListener('submit', async e => {
 });
 
 document.querySelectorAll('.friends-tabs button').forEach(b => { b.onclick = () => { tab = b.dataset.tab; render(); }; });
+$('feed-more').onclick = () => { feedShown += 15; renderFeed(); };
 
 $('copy-link').onclick = async () => {
   try { await navigator.clipboard.writeText($('my-link').textContent); $('copy-link').textContent = t('follow.copied'); }

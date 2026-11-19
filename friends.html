@@ -35,6 +35,20 @@
   </header>
 
   <main class="wrap friends-main" id="friends-main" hidden>
+    <div class="friends-top" id="friends-top" hidden>
+      <section class="card">
+        <h2 data-i18n="feed.title">Activity</h2>
+        <p class="muted" data-i18n="feed.sub">What the people you follow practised in the last two weeks.</p>
+        <ul class="feed" id="feed"></ul>
+        <button type="button" class="link feed-more" id="feed-more" hidden data-i18n="feed.more">Show more</button>
+      </section>
+      <section class="card">
+        <h2 data-i18n="board.title">This week</h2>
+        <p class="muted" data-i18n="board.sub">Minutes since Monday. Starts again every Monday.</p>
+        <ol class="board" id="board"></ol>
+      </section>
+    </div>
+
     <section class="card friends-add">
       <div>
         <h2 data-i18n="follow.addTitle">Add a friend</h2>
