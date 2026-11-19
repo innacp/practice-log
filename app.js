@@ -243,7 +243,8 @@ function renderStats() {
 }
 
 let onlyClips = false; // "Recordings" filter: only sessions with a clip
-let sessionsShown = 10;
+const SESSIONS_STEP = 5;
+let sessionsShown = SESSIONS_STEP;
 function renderSessions() {
   const ul = document.getElementById('sessions');
   ul.innerHTML = '';
@@ -254,7 +255,13 @@ function renderSessions() {
   clipsBtn.setAttribute('aria-pressed', onlyClips);
   const sorted = [...visible()].filter(s => !onlyClips || s.clip).sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created);
   const list = sorted.slice(0, sessionsShown);
-  document.getElementById('sessions-more').hidden = sorted.length <= sessionsShown;
+  // "Show more (12)" while some are hidden, "Show less" once the list has grown
+  const hiddenCount = Math.max(0, sorted.length - sessionsShown);
+  const more = document.getElementById('sessions-more');
+  more.hidden = !hiddenCount;
+  more.textContent = t('sessions.more', { n: hiddenCount });
+  document.getElementById('sessions-less').hidden = sessionsShown <= SESSIONS_STEP;
+  document.getElementById('sessions-pager').hidden = more.hidden && sessionsShown <= SESSIONS_STEP;
   if (!list.length) { ul.appendChild(el('li', 'empty', t('sessions.empty'))); return; }
   for (const s of list) {
     const li = el('li', s.id === justAddedId ? 'new' : null);
@@ -280,8 +287,13 @@ function renderSessions() {
     ul.appendChild(li);
   }
 }
-document.getElementById('only-clips').onclick = () => { onlyClips = !onlyClips; sessionsShown = 10; renderSessions(); };
-document.getElementById('sessions-more').onclick = () => { sessionsShown += 20; renderSessions(); };
+document.getElementById('only-clips').onclick = () => { onlyClips = !onlyClips; sessionsShown = SESSIONS_STEP; renderSessions(); };
+document.getElementById('sessions-more').onclick = () => { sessionsShown += 10; renderSessions(); };
+document.getElementById('sessions-less').onclick = () => {
+  sessionsShown = SESSIONS_STEP;
+  renderSessions();
+  document.getElementById('sessions').closest('.card').scrollIntoView({ block: 'nearest', behavior: 'smooth' });
+};
 
 // ---------- Weekly goal ----------
 const RING_C = 2 * Math.PI * 60;

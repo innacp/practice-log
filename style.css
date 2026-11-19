@@ -1121,7 +1121,7 @@ html[data-theme="dark"] {
 /* =========================================================
    UI tidy-up
    ========================================================= */
-.list-more { display: block; margin: 10px auto 0; }
+.list-more { display: flex; justify-content: center; align-items: center; gap: 14px; margin-top: 14px; }
 .admin-view { margin-left: auto; }
 .topbar-inner > .theme-btn, .topbar-inner > .admin-link, .topbar-inner > .account-btn { flex: none; }
 @media (max-width: 600px) {
