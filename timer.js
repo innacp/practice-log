@@ -40,7 +40,8 @@ function draw() {
   $('dial').classList.toggle('running', running());
   // Ring takes the instrument's colour
   fill.style.stroke = instrColor(state.type);
-  fill.style.filter = running() ? `drop-shadow(0 0 10px ${instrColor(state.type)}aa)` : '';
+  // glow on the whole drawing, not the arc, so it isn't clipped to a square
+  fill.ownerSVGElement.style.filter = running() ? `drop-shadow(0 0 10px ${instrColor(state.type)}aa)` : '';
 
   let sub;
   if (running()) sub = targetMs ? (ms >= targetMs ? t('timer.reached') : t('timer.toGo', { t: fmtMin(Math.ceil((targetMs - ms) / 60000)) })) : t('timer.practising');
