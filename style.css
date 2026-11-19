@@ -1071,3 +1071,10 @@ html[data-theme="dark"] {
 .metro-link { display: flex; align-items: center; gap: 8px; font-size: 14px; color: var(--muted); cursor: pointer; }
 .metro-link input { width: 18px; height: 18px; margin: 0; accent-color: var(--brand); }
 @media (max-width: 600px) { .metro-card { padding: 20px 16px; } }
+/* Wide screens: timer and metronome side by side, same height */
+@media (min-width: 980px) {
+  main.timer-main { display: grid; grid-template-columns: repeat(2, minmax(0, 520px)); justify-content: center; align-items: stretch; }
+  .timer-card, .metro-card { max-width: none; }
+  .metro-card { justify-content: center; }
+  .timer-today { grid-column: 1 / -1; }
+}
