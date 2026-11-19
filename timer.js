@@ -105,16 +105,18 @@ function start() {
   if (!audio) { try { audio = new (window.AudioContext || window.webkitAudioContext)(); } catch {} } // unlock sound on tap
   state.startedAt = Date.now();
   saveTimer(); keepAwake(true); syncControls();
+  if (metro.withTimer) metroStart();
   $('saved-msg').hidden = true;
 }
 function pause() {
   state.elapsed = elapsedMs();
   state.startedAt = null;
-  saveTimer(); keepAwake(false); syncControls();
+  saveTimer(); keepAwake(metroOn()); syncControls();
+  if (metro.withTimer) metroStop();
 }
 function reset() {
   state = { ...state, startedAt: null, elapsed: 0, chimed: false };
-  saveTimer(); keepAwake(false);
+  saveTimer(); keepAwake(metroOn());
   $('finish-form').hidden = true;
   $('controls').hidden = false;
   syncControls();
