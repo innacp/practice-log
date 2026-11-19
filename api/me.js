@@ -5,7 +5,7 @@
 //   DELETE /api/me                      { password }   deletes the account and all its data
 //   PUT    /api/me?action=avatar        { image: "data:image/webp;base64,..." }  set profile photo
 //   DELETE /api/me?action=avatar        remove profile photo
-import { redis, readBody, begin, publicUser, loadUser, hashPassword, checkPassword, endSession, parseImage, limited } from './_lib.js';
+import { redis, readBody, begin, publicUser, loadUser, loadSessions, hashPassword, checkPassword, endSession, parseImage, limited } from './_lib.js';
 
 const RESERVED = new Set(['admin', 'login', 'profile', 'api', 'timer', 'theory', 'u', 'me', 'muza', 'settings', 'friends', 'practice', 'home']);
 
@@ -69,7 +69,11 @@ export default async function handler(req, res) {
       if (!(await checkPassword(String(b.password || ''), me.pass))) return res.status(403).json({ error: 'wrong-password' });
       if (me.role === 'admin') return res.status(400).json({ error: 'admin-cannot-delete' });
       // Take this account out of everyone's following / followers lists
-      const [following, followers] = await Promise.all([redis('HKEYS', 'following:' + me.id), redis('HKEYS', 'followers:' + me.id)]);
+      const [following, followers, sessions] = await Promise.all([
+        redis('HKEYS', 'following:' + me.id), redis('HKEYS', 'followers:' + me.id), loadSessions(me.id),
+      ]);
+      const clips = sessions.filter(s => s && s.clip).map(s => 'clip:' + me.id + ':' + s.id);
+      if (clips.length) await redis('DEL', ...clips);
       await Promise.all([
         ...(following || []).map(id => redis('HDEL', 'followers:' + id, me.id)),
         ...(followers || []).map(id => redis('HDEL', 'following:' + id, me.id)),

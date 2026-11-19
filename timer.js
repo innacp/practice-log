@@ -117,6 +117,7 @@ function pause() {
 function reset() {
   state = { ...state, startedAt: null, elapsed: 0, chimed: false };
   saveTimer(); keepAwake(metroOn());
+  timerRec.clear();
   $('finish-form').hidden = true;
   $('controls').hidden = false;
   syncControls();
@@ -126,6 +127,7 @@ $('start').onclick = () => (running() ? pause() : start());
 
 $('finish').onclick = () => {
   if (running()) pause();
+  timerRec.stop(); // the clip shows in the save form
   const min = Math.round(elapsedMs() / 60000);
   if (min < 1) {
     showMsg(t('timer.min1'), 'warn');
@@ -160,6 +162,8 @@ $('finish-form').addEventListener('submit', async e => {
   saveSessions(list);
   $('notes').value = '';
   confetti(document.querySelector('#finish-form .primary'));
+  await timerRec.stop();
+  const clip = timerRec.blob();
   reset();
   renderToday();
 
@@ -167,7 +171,19 @@ $('finish-form').addEventListener('submit', async e => {
   if (r.status !== 200 && r.status !== 401 && cacheOwner()) addPending([session.id]);
   lastSaved = { key: r.status === 200 ? 'timer.savedOk' : 'timer.savedLocal', vars: { t: fmtMin(minutes), type: instrLower(session.type) }, minutes, type: session.type };
   showMsg(t(lastSaved.key, lastSaved.vars), r.status === 200 ? 'ok' : 'warn', true);
+  if (clip && r.status === 200) {
+    const v = await uploadClip(session.id, clip);
+    if (v) {
+      const saved = loadSessions();
+      const s = saved.find(x => x.id === session.id);
+      if (s) { s.clip = v; saveSessions(saved); }
+    } else showMsg(t('rec.uploadFail'), 'warn');
+  }
 });
+
+// Record a clip while you practise; it is attached when you save the session
+const timerRec = createRecorder($('rec-timer'));
+authReady.then(() => { if (currentUser()) $('rec-timer').hidden = false; });
 
 let lastSaved = null; // remembered so the message can be re-translated
 function niceText(min) { return t('timer.nice', { t: fmtMin(min), type: instrLower(state.type) }); }

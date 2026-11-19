@@ -45,6 +45,7 @@ async function connect() {
   const res = await api('GET');
   if (res.status === 200 && res.data && Array.isArray(res.data.sessions)) {
     cloud = true;
+    document.getElementById('rec-log').hidden = false;
     showSignInBanner(false);
     const remote = res.data.sessions;
     const remoteIds = new Set(remote.map(s => s.id));
@@ -241,10 +242,17 @@ function renderStats() {
   countTo('hours', total / 60, 1);
 }
 
+let onlyClips = false; // "Recordings" filter: every session with a clip, oldest ones too
 function renderSessions() {
   const ul = document.getElementById('sessions');
   ul.innerHTML = '';
-  const list = [...visible()].sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created).slice(0, 30);
+  const clipsBtn = document.getElementById('only-clips');
+  clipsBtn.hidden = !sessions.some(s => s.clip);
+  if (clipsBtn.hidden) onlyClips = false;
+  clipsBtn.classList.toggle('on', onlyClips);
+  clipsBtn.setAttribute('aria-pressed', onlyClips);
+  const sorted = [...visible()].filter(s => !onlyClips || s.clip).sort((a, b) => b.date.localeCompare(a.date) || b.created - a.created);
+  const list = onlyClips ? sorted : sorted.slice(0, 30);
   if (!list.length) { ul.appendChild(el('li', 'empty', t('sessions.empty'))); return; }
   for (const s of list) {
     const li = el('li', s.id === justAddedId ? 'new' : null);
@@ -263,12 +271,14 @@ function renderSessions() {
       el('span', 's-date', pretty(s.date)),
       Object.assign(el('span', 'tag', instrLower(s.type)), { style: instrTagStyle(s.type) }),
       el('span', 's-min', t('min', { n: s.minutes })),
-      el('span', 's-notes', s.notes || ''),
+      Object.assign(el('span', 's-notes'), { textContent: s.notes || '' }),
       del,
     );
+    if (s.clip) li.querySelector('.s-notes').prepend(clipButton(s));
     ul.appendChild(li);
   }
 }
+document.getElementById('only-clips').onclick = () => { onlyClips = !onlyClips; renderSessions(); };
 
 // ---------- Weekly goal ----------
 const RING_C = 2 * Math.PI * 60;
@@ -573,7 +583,8 @@ document.getElementById('inst-form').addEventListener('submit', async e => {
 // Form
 const form = document.getElementById('log-form');
 form.date.value = today();
-form.addEventListener('submit', e => {
+const logRec = createRecorder(document.getElementById('rec-log'));
+form.addEventListener('submit', async e => {
   e.preventDefault();
   const minutes = parseInt(form.minutes.value, 10);
   if (!minutes || !form.date.value) return;
@@ -590,7 +601,14 @@ form.addEventListener('submit', e => {
   render();
   justAddedId = justAddedDate = null;
   confetti(form.querySelector('.primary'));
-  cloudSave([session]);
+  await logRec.stop();
+  const clip = logRec.blob();
+  logRec.clear();
+  await cloudSave([session]);
+  if (clip && cloud) {
+    session.clip = await uploadClip(session.id, clip);
+    if (session.clip) { save(); renderSessions(); } else setSync('rec.uploadFail', 'err');
+  }
 });
 
 
