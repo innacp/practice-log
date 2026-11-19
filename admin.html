@@ -59,6 +59,14 @@
         <p class="muted">Send it to them privately (for example in a message). They log in with it and then choose their own password under <b>My profile → Password</b>. The old password no longer works.</p>
       </div>
       <ul class="users-list" id="users-list"></ul>
+      <div class="dedupe">
+        <div>
+          <b>Copies of your practice in other accounts</b>
+          <p class="muted">If someone signed up in a browser that still had the old shared log saved, your sessions were copied into their account. This removes those copies. Their own practice and yours stay untouched.</p>
+          <p class="muted" id="dedupe-result" hidden></p>
+        </div>
+        <button type="button" class="ghost" id="dedupe-btn">Remove copies</button>
+      </div>
     </section>
 
     <!-- Editor -->

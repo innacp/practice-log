@@ -4,6 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>Muza</title>
+  <meta name="description" content="Muza: track your music practice like a GitHub graph, with a timer, weekly goals and music theory lessons.">
   <link rel="icon" href="favicon.svg" type="image/svg+xml">
   <link rel="apple-touch-icon" href="favicon.svg">
   <meta name="theme-color" content="#D100FF">
@@ -12,8 +13,15 @@
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Space+Grotesk:wght@500;700&family=Comfortaa:wght@700&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="style.css">
   <script src="theme.js"></script>
+  <script>
+    // Signed-in people opening the site go straight to their practice;
+    // clicking the logo from inside the site still shows this page.
+    try {
+      if (localStorage.getItem('practice-log-cache-owner') && !document.referrer.startsWith(location.origin)) location.replace('/practice');
+    } catch (e) {}
+  </script>
 </head>
-<body data-title="title.log">
+<body data-title="title.home" class="home-page">
   <header class="topbar">
     <div class="wrap topbar-inner">
       <a class="brand" href="/">
@@ -21,173 +29,60 @@
         <span class="wordmark" data-i18n="brand">Muza</span>
       </a>
       <nav class="nav" data-i18n-aria="nav.pages" aria-label="Pages">
-        <a href="/" aria-current="page" data-i18n="nav.log">Practice</a>
+        <a href="/practice" data-i18n="nav.log">Practice</a>
         <a href="/timer" data-i18n="nav.timer">Timer</a>
         <a href="/theory" data-i18n="nav.theory">Theory</a>
       </nav>
-      <div class="top-right">
-        <span class="muted" id="today"></span>
-        <span class="sync" id="sync" hidden></span>
-      </div>
       <div class="lang-switch" role="group" data-i18n-aria="lang.label" aria-label="Language">
         <button type="button" data-lang="en" lang="en">EN</button>
         <button type="button" data-lang="uk" lang="uk">UA</button>
       </div>
-      <a class="admin-link" hidden href="/admin" data-i18n-aria="admin.link" aria-label="Admin: edit lessons" title="Admin">
-        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z"/><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1Z"/></svg>
-      </a>
       <a class="account-btn" href="/login" hidden>Log in</a>
     </div>
   </header>
 
-  <main class="wrap">
-    <section class="card signin-banner" id="signin-banner" hidden>
-      <div>
-        <h2 data-i18n="auth.bannerTitle">Save your progress online</h2>
-        <p class="muted" data-i18n="auth.bannerText">Create a free account to keep your practice log on every device and get your own profile page.</p>
-      </div>
-      <div class="banner-actions">
-        <a class="primary btn-link" href="/login?mode=signup" data-i18n="auth.signup">Sign up</a>
-        <a class="ghost btn-link" href="/login" data-i18n="auth.login">Log in</a>
-      </div>
-    </section>
-
-    <!-- Summary strip: streak with its fire, then three quiet numbers -->
-    <section class="card streak-card">
-      <div class="streak-main">
-        <div class="fire" aria-hidden="true">
-          <div class="glow"></div>
-          <div class="flame outer"></div>
-          <div class="flame mid"></div>
-          <div class="flame inner"></div>
-          <span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span><span class="ember"></span>
+  <main class="wrap home">
+    <section class="home-hero">
+      <div class="home-copy">
+        <h1 data-i18n="home.title">Practise a little every day. Watch it add up.</h1>
+        <p class="home-lead" data-i18n="home.lead">Muza is a practice diary for musicians. Log what you play, keep a streak going, and see your whole year fill up with colour.</p>
+        <div class="home-cta" id="cta-out">
+          <a class="primary btn-link" href="/login?mode=signup" data-i18n="home.start">Start for free</a>
+          <a class="ghost btn-link" href="/login" data-i18n="auth.login">Log in</a>
         </div>
-        <div>
-          <p class="eyebrow" data-i18n="streak.title">Current streak</p>
-          <p class="streak"><span id="streak">0</span><span class="unit"> days</span></p>
+        <div class="home-cta" id="cta-in" hidden>
+          <a class="primary btn-link" href="/practice" data-i18n="home.open">Open my practice</a>
         </div>
       </div>
-      <div class="streak-stats">
-        <div><b id="longest">0</b><span data-i18n="stat.longest">longest streak</span></div>
-        <div><b id="week">0</b><span data-i18n="stat.week">min this week</span></div>
-        <div><b id="hours">0</b><span data-i18n="stat.hours">hours total</span></div>
+      <div class="card home-graph" aria-hidden="true">
+        <div class="hg-head"><b data-i18n="home.sample">A year of practice</b><span class="muted" data-i18n="home.sampleNote">example</span></div>
+        <div class="hg-cells" id="hg-cells"></div>
       </div>
     </section>
 
-    <section class="hero">
-      <form class="card log" id="log-form">
-        <div class="form-head">
-          <h2 data-i18n="log.title">Log a session</h2>
-          <button type="button" class="link" id="inst-edit" data-i18n="inst.edit">Edit instruments</button>
-        </div>
-        <div class="toggle" id="inst-toggle" role="group" data-i18n-aria="instrument" aria-label="Instrument"></div>
-        <div class="two">
-          <label><span data-i18n="log.date">Date</span> <input type="date" name="date" required></label>
-          <label><span data-i18n="log.howlong">How long</span>
-            <select name="minutes" id="minutes-select">
-              <option value="15">15 min</option>
-              <option value="20">20 min</option>
-              <option value="30" selected>30 min</option>
-              <option value="60">1 hour</option>
-            </select>
-          </label>
-        </div>
-        <label><span data-i18n="log.notes">What did you work on?</span> <input type="text" name="notes" placeholder="e.g. paradiddles at 90 bpm" data-i18n-ph="log.ph"></label>
-        <button type="submit" class="primary" data-i18n="log.add">Add session</button>
-      </form>
-
-      <div class="card goal">
-        <div class="row">
-          <div>
-            <h2 data-i18n="goal.title">Weekly goal</h2>
-            <p class="muted" id="goal-sub"></p>
-          </div>
-          <button type="button" class="ghost" id="goal-edit" data-i18n="goal.edit">Edit goal</button>
-        </div>
-        <form class="goal-form" id="goal-form" hidden>
-          <label for="goal-hours" data-i18n="goal.hours">Hours per week</label>
-          <select class="field" id="goal-hours">
-            <option value="60">1 hour</option>
-            <option value="120">2 hours</option>
-            <option value="180">3 hours</option>
-            <option value="240">4 hours</option>
-            <option value="300">5 hours</option>
-            <option value="420">7 hours</option>
-            <option value="600">10 hours</option>
-            <option value="840">14 hours</option>
-          </select>
-          <button type="submit" class="primary small" data-i18n="save">Save</button>
-          <button type="button" class="link" id="goal-cancel" data-i18n="cancel">Cancel</button>
-        </form>
-        <div class="goal-body">
-          <div class="ring" id="goal-ring-wrap">
-            <svg viewBox="0 0 140 140" aria-hidden="true">
-              <circle class="ring-track" cx="70" cy="70" r="60"/>
-              <circle class="ring-fill" id="goal-ring" cx="70" cy="70" r="60"/>
-            </svg>
-            <div class="ring-center"><b id="goal-pct">0%</b><span id="goal-of"></span></div>
-          </div>
-          <div class="week-bars" id="week-bars" data-i18n-aria="goal.bars" aria-label="Minutes each day this week"></div>
-        </div>
-        <div class="split-legend goal-legend" id="goal-legend"></div>
-      </div>
+    <section class="home-features">
+      <article class="card feature">
+        <span class="f-icon" style="--f:#C800F5"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="3" width="7" height="7" rx="1.5"/><rect x="14" y="3" width="7" height="7" rx="1.5"/><rect x="3" y="14" width="7" height="7" rx="1.5"/><rect x="14" y="14" width="7" height="7" rx="1.5"/></svg></span>
+        <h2 data-i18n="home.f1">Your practice graph</h2>
+        <p class="muted" data-i18n="home.f1t">Every session becomes a square. Streaks, weekly goals and monthly recaps keep you going.</p>
+      </article>
+      <article class="card feature">
+        <span class="f-icon" style="--f:#FA8128"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2.5M9 2h6"/></svg></span>
+        <h2 data-i18n="home.f2">Practice timer</h2>
+        <p class="muted" data-i18n="home.f2t">Press start, play, press finish. The session is saved to your log by itself.</p>
+      </article>
+      <article class="card feature">
+        <span class="f-icon" style="--f:#7B61FF"><svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 18V5l12-2v13"/><circle cx="6" cy="18" r="3"/><circle cx="18" cy="16" r="3"/></svg></span>
+        <h2 data-i18n="home.f3">Music theory</h2>
+        <p class="muted" data-i18n="home.f3t">Lessons from beginner to advanced, explained on a piano you can play right on the page.</p>
+      </article>
     </section>
 
-    <section class="card" id="year-card">
-      <div class="row">
-        <div>
-          <h2 data-i18n="year.title">The last year</h2>
-          <p class="muted" id="year-summary"></p>
-        </div>
-        <div class="tabs" id="tabs" role="tablist">
-          <span class="tab-pill" aria-hidden="true"></span>
-        </div>
-      </div>
-      <div class="graph-scroll"><div class="graph-box"><div id="graph"></div><div class="legend" id="legend"></div></div></div>
-    </section>
-
-    <section class="card recap">
-        <div class="row">
-          <h2 data-i18n="recap.title">Monthly recap</h2>
-          <div class="month-nav">
-            <button type="button" class="icon-btn" id="recap-prev" data-i18n-aria="recap.prev" aria-label="Previous month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 6l-6 6 6 6"/></svg></button>
-            <span id="recap-month"></span>
-            <button type="button" class="icon-btn" id="recap-next" data-i18n-aria="recap.next" aria-label="Next month"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 6l6 6-6 6"/></svg></button>
-          </div>
-        </div>
-        <div id="recap-body"></div>
-    </section>
-
-    <section class="card">
-      <div class="row">
-        <h2 data-i18n="sessions.title">Recent sessions</h2>
-        <div class="tools">
-          <button type="button" class="ghost" id="export" data-i18n="export">Export</button>
-          <label class="ghost"><span data-i18n="import">Import</span><input type="file" id="import" accept="application/json" hidden></label>
-        </div>
-      </div>
-      <ul id="sessions"></ul>
-    </section>
+    <p class="home-instruments muted" data-i18n="home.instr">For drums, vocals, guitar, bass and piano.</p>
   </main>
 
-  <div id="tip" hidden></div>
-
-  <!-- Choose instruments -->
-  <dialog class="w-dialog inst-dialog" id="inst-dialog">
-    <form method="dialog" id="inst-form">
-      <h2 data-i18n="inst.welcome">What do you practise?</h2>
-      <p class="muted" data-i18n="inst.hint"></p>
-      <div id="inst-picker"></div>
-      <p class="error" id="inst-error" hidden data-i18n="inst.needOne"></p>
-      <div class="w-actions">
-        <span class="spacer"></span>
-        <button type="button" class="ghost" id="inst-cancel" data-i18n="cancel">Cancel</button>
-        <button type="submit" class="primary" data-i18n="save">Save</button>
-      </div>
-    </form>
-  </dialog>
   <script src="i18n.js"></script>
   <script src="store.js"></script>
-  <script src="app.js"></script>
+  <script src="home.js"></script>
 </body>
 </html>

@@ -163,6 +163,7 @@ $('finish-form').addEventListener('submit', async e => {
   renderToday();
 
   const r = await api('POST', [session]);
+  if (r.status !== 200 && r.status !== 401 && cacheOwner()) addPending([session.id]);
   lastSaved = { key: r.status === 200 ? 'timer.savedOk' : 'timer.savedLocal', vars: { t: fmtMin(minutes), type: instrLower(session.type) }, minutes, type: session.type };
   showMsg(t(lastSaved.key, lastSaved.vars), r.status === 200 ? 'ok' : 'warn', true);
 });
@@ -176,7 +177,7 @@ function showMsg(text, kind, withLink) {
   if (!withLink) lastSaved = null;
   if (withLink) {
     const a = el('a', null, t('timer.seeLog'));
-    a.href = '/';
+    a.href = '/practice';
     m.append(a);
   }
   m.className = 'saved-msg ' + (kind || '');

@@ -441,6 +441,17 @@ function renderUsers() {
   if (!list.length) ul.appendChild(el('li', 'muted', 'No users match.'));
 }
 $('users-search').addEventListener('input', renderUsers);
+$('dedupe-btn').onclick = async () => {
+  const btn = $('dedupe-btn'), out = $('dedupe-result');
+  btn.disabled = true;
+  const r = await api('POST', {}, '?action=dedupe', '/api/admin');
+  btn.disabled = false;
+  out.hidden = false;
+  if (r.status !== 200) { out.textContent = 'Something went wrong. Try again.'; return; }
+  out.textContent = r.data.removed
+    ? `Removed ${r.data.removed} copied session${r.data.removed === 1 ? '' : 's'} from: ` + r.data.accounts.map(a => `${a.name} (${a.removed})`).join(', ') + '.'
+    : 'No copies found. Every account only has its own practice.';
+};
 $('pw-copy').onclick = async () => {
   try { await navigator.clipboard.writeText($('pw-value').textContent); $('pw-copy').textContent = 'Copied!'; }
   catch { $('pw-copy').textContent = 'Select and copy it'; }

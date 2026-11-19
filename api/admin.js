@@ -52,6 +52,28 @@ export default async function handler(req, res) {
       return res.status(200).json({ password });
     }
 
+    // Remove copies of the admin's own sessions from every other account. Session ids
+    // are random, so a session with one of the admin's ids in someone else's log is a
+    // copy (uploaded from a browser that had the old shared log cached).
+    if (req.method === 'POST' && req.query.action === 'dedupe') {
+      const mine = pairs(await redis('HGETALL', 'sessions:' + me.id));
+      const myIds = new Set(Object.keys(mine));
+      let removed = 0;
+      const accounts = [];
+      for (const id of await allUserIds()) {
+        if (id === me.id) continue;
+        const theirs = Object.keys(pairs(await redis('HGETALL', 'sessions:' + id)));
+        const copies = theirs.filter(sid => myIds.has(sid));
+        if (copies.length) {
+          await redis('HDEL', 'sessions:' + id, ...copies);
+          removed += copies.length;
+          const u = pairs(await redis('HGETALL', 'user:' + id));
+          accounts.push({ name: u.name, email: u.email, removed: copies.length });
+        }
+      }
+      return res.status(200).json({ removed, accounts });
+    }
+
     return res.status(400).json({ error: 'unknown-action' });
   } catch (err) {
     console.error(err);

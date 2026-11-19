@@ -1,6 +1,6 @@
 // Log in / sign up / forgot password / new password, all on one page.
 const params = new URLSearchParams(location.search);
-const next = (params.get('next') || '/').startsWith('/') ? (params.get('next') || '/') : '/';
+const next = (params.get('next') || '/practice').startsWith('/') ? (params.get('next') || '/practice') : '/practice';
 const resetToken = params.get('reset');
 const forms = [...document.querySelectorAll('.auth-form')];
 
@@ -24,10 +24,10 @@ function busy(form, on) {
 }
 const data = form => Object.fromEntries(new FormData(form).entries());
 
-// After logging in: anything logged on this device before signing in is moved into
-// the account by the log page, unless it belonged to a different account.
+// After logging in: data cached in this browser is kept only if it is this
+// same account's; anything else (another person's, or from before accounts) is cleared.
 function done(user) {
-  if (cacheOwner() && cacheOwner() !== user.id) clearLocalData();
+  if (cacheOwner() !== user.id) clearLocalData();
   location.href = next;
 }
 

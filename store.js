@@ -86,8 +86,14 @@ function saveSettingsLocal(s) {
 const CACHE_OWNER_KEY = 'practice-log-cache-owner';
 function cacheOwner() { try { return localStorage.getItem(CACHE_OWNER_KEY) || ''; } catch { return ''; } }
 function setCacheOwner(id) { try { id ? localStorage.setItem(CACHE_OWNER_KEY, id) : localStorage.removeItem(CACHE_OWNER_KEY); } catch {} }
+// Sessions this account logged while the save failed (offline). Only these are
+// ever uploaded later; anything else cached in the browser stays out of the account.
+const PENDING_KEY = 'muza-pending';
+function pendingIds() { try { return new Set(JSON.parse(localStorage.getItem(PENDING_KEY)) || []); } catch { return new Set(); } }
+function addPending(ids) { try { localStorage.setItem(PENDING_KEY, JSON.stringify([...new Set([...pendingIds(), ...ids])])); } catch {} }
+function clearPending() { try { localStorage.removeItem(PENDING_KEY); } catch {} }
 function clearLocalData() {
-  try { [KEY, SETTINGS_KEY, CACHE_OWNER_KEY, 'practice-log-timer'].forEach(k => localStorage.removeItem(k)); } catch {}
+  try { [KEY, SETTINGS_KEY, CACHE_OWNER_KEY, PENDING_KEY, 'practice-log-timer'].forEach(k => localStorage.removeItem(k)); } catch {}
 }
 
 // Calls the online API (the login cookie goes along automatically).

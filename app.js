@@ -27,6 +27,11 @@ function showSignInBanner(on) {
 async function connect() {
   await authReady;
   const user = currentUser();
+  if (!user && authState) {
+    // Accounts exist: your practice lives in your account, so log in first
+    location.replace('/login?next=/practice');
+    return;
+  }
   if (!user) {
     cloud = false;
     showSignInBanner(!!authState); // accounts exist only when the online database is set up
@@ -41,11 +46,12 @@ async function connect() {
     showSignInBanner(false);
     const remote = res.data.sessions;
     const remoteIds = new Set(remote.map(s => s.id));
-    // Sessions logged on this device before signing in move into the account,
-    // unless they belong to a different account that used this browser before.
-    const mine = !cacheOwner() || cacheOwner() === user.id;
-    const localOnly = mine ? sessions.filter(s => !remoteIds.has(s.id)) : [];
-    if (!mine) settings = { weeklyGoal: 180 };
+    // The account is the source of truth. Only sessions this same account logged
+    // while offline (the pending list) are uploaded; any other cached data is dropped.
+    const mine = cacheOwner() === user.id;
+    const pending = mine ? pendingIds() : new Set();
+    const localOnly = sessions.filter(s => pending.has(s.id) && !remoteIds.has(s.id));
+    if (!mine) { clearLocalData(); settings = { ...DEFAULT_SETTINGS }; }
     setCacheOwner(user.id);
     sessions = remote.concat(localOnly);
     save();
@@ -64,6 +70,7 @@ async function connect() {
       const up = await api('POST', localOnly);
       if (up.status !== 200) { setSync('sync.partial', 'err'); render(); return; }
     }
+    clearPending();
     setSync('sync.ok', 'ok');
     render();
     return;
@@ -82,7 +89,7 @@ async function cloudSave(list) {
   const r = await api('POST', list).catch(() => ({ status: 0 }));
   if (r.status === 200) setSync('sync.ok', 'ok');
   else if (r.status === 401) { cloud = false; showSignInBanner(true); setSync('sync.fail', 'err'); }
-  else setSync('sync.fail', 'err');
+  else { addPending(list.map(s => s.id)); setSync('sync.fail', 'err'); }
 }
 
 async function cloudDelete(id) {
